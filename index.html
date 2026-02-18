@@ -1,0 +1,1853 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учебный Хаб Дианы 2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body { font-family: 'Nunito', sans-serif; background-color: #F3F4F6; }
+        .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .card-hover:hover { transform: translateY(-3px); transition: all 0.3s ease; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .tab-active { border-left: 4px solid #764ba2; background-color: #ede9fe; color: #5b21b6; font-weight: 700; }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Scrollbar */
+        .timeline-scroll::-webkit-scrollbar { height: 8px; }
+        .timeline-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .timeline-scroll::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 4px; }
+        .timeline-scroll::-webkit-scrollbar-thumb:hover { background: #a78bfa; }
+
+        /* Sticky Sidebar for Desktop */
+        @media (min-width: 768px) {
+            .sticky-sidebar { position: sticky; top: 0; height: fit-content; }
+        }
+
+        /* Interactive Day Card */
+        .day-card { transition: all 0.3s ease; cursor: pointer; user-select: none; }
+        .day-card.completed { background-color: #dcfce7; border-color: #22c55e; }
+        .day-card.completed h4 { color: #15803d; text-decoration: line-through; }
+        .day-card.completed .check-icon { background-color: #22c55e; border-color: #22c55e; color: white; }
+        .trainer-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.75); backdrop-filter: blur(1px); z-index: 5; display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px; border-radius: 16px; }
+        .challenge-shake { animation: challengeShake 0.35s linear; }
+        .floating-timer-hud {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            z-index: 40;
+            width: min(320px, 92vw);
+            box-shadow: 0 14px 36px rgba(15, 23, 42, 0.16);
+            pointer-events: auto;
+        }
+        @media (max-width: 767px) {
+            .floating-timer-hud {
+                top: auto;
+                right: auto;
+                left: 50%;
+                bottom: 10px;
+                transform: translateX(-50%);
+                width: min(92vw, 520px);
+            }
+        }
+        @keyframes challengeShake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            50% { transform: translateX(6px); }
+            75% { transform: translateX(-4px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="text-gray-700">
+
+    <!-- Header -->
+    <header class="gradient-bg text-white pb-24 pt-8 px-6 shadow-lg relative overflow-hidden">
+        <!-- Decorative background elements -->
+        <div class="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-white opacity-10 blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 -ml-20 -mb-20 w-40 h-40 rounded-full bg-purple-300 opacity-10 blur-2xl"></div>
+
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center relative z-10">
+            <div class="mb-6 md:mb-0">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">Student Dashboard</span>
+                </div>
+                <h1 class="text-3xl md:text-5xl font-extrabold mb-2 tracking-tight">Привет, Диана! 👋</h1>
+                <p class="text-blue-100 text-lg font-medium">Давай покорим английскую грамматику!</p>
+            </div>
+            
+            <!-- Gamification Stats -->
+            <div class="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 flex items-center gap-6 shadow-xl">
+                <div class="text-center">
+                    <p class="text-xs text-blue-200 uppercase font-bold tracking-wider">Твой уровень</p>
+                    <div class="text-3xl font-black text-yellow-300" id="xpDisplay">0 XP</div>
+                </div>
+                <div class="h-10 w-px bg-white/20"></div>
+                <div class="text-center">
+                    <p class="text-xs text-blue-200 uppercase font-bold tracking-wider">Прогресс</p>
+                    <div class="text-xl font-bold text-white" id="totalProgressDisplay">0%</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 -mt-16 pb-20 relative z-20">
+        
+        <!-- Top Stats Row (Previous Results) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            <!-- Quiz 1 -->
+            <div class="bg-white rounded-2xl shadow-sm p-6 card-hover border-l-4 border-blue-500">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800">Quiz 1: Basics</h3>
+                        <p class="text-xs text-gray-400">Предыдущий результат</p>
+                    </div>
+                    <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold text-sm">63%</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-2 mb-4">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 63%"></div>
+                </div>
+                <div class="flex justify-between text-xs font-semibold text-gray-500">
+                    <span class="text-green-600"><i class="fas fa-check mr-1"></i>19 Верно</span>
+                    <span class="text-red-500"><i class="fas fa-times mr-1"></i>11 Ошибок</span>
+                </div>
+            </div>
+
+            <!-- Quiz 2 -->
+            <div class="bg-white rounded-2xl shadow-sm p-6 card-hover border-l-4 border-purple-500">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-bold text-lg text-gray-800">Quiz 2: Advanced</h3>
+                        <p class="text-xs text-gray-400">Предыдущий результат</p>
+                    </div>
+                    <span class="bg-purple-50 text-purple-600 px-3 py-1 rounded-full font-bold text-sm">55%</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-2 mb-4">
+                    <div class="bg-purple-500 h-2 rounded-full" style="width: 55%"></div>
+                </div>
+                <div class="flex justify-between text-xs font-semibold text-gray-500">
+                    <span class="text-green-600"><i class="fas fa-check mr-1"></i>11 Верно</span>
+                    <span class="text-red-500"><i class="fas fa-times mr-1"></i>9 Ошибок</span>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-sm p-4 mb-10 border border-gray-100">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                <div class="bg-gray-50 rounded-xl p-3">
+                    <p class="text-xs uppercase tracking-wider text-gray-400 font-bold">Выполнено задач</p>
+                    <p class="text-xl font-extrabold text-gray-800"><span id="completedTasksDisplay">0</span>/<span id="totalTasksDisplay">0</span></p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-3">
+                    <p class="text-xs uppercase tracking-wider text-gray-400 font-bold">Правильные ответы</p>
+                    <p class="text-xl font-extrabold text-green-600" id="correctCountDisplay">0</p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-3">
+                    <p class="text-xs uppercase tracking-wider text-gray-400 font-bold">Попытки</p>
+                    <p class="text-xl font-extrabold text-indigo-600" id="attemptCountDisplay">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Learning Area -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden min-h-[600px] flex flex-col md:flex-row">
+            
+            <!-- Sidebar -->
+            <div class="w-full md:w-1/4 bg-gray-50 border-r border-gray-100 sticky-sidebar z-10">
+                <div class="p-5 border-b border-gray-100 bg-gray-50">
+                    <h2 class="font-bold text-gray-700 uppercase text-xs tracking-wider flex items-center gap-2">
+                        <i class="fas fa-graduation-cap text-purple-500"></i>
+                        Зоны роста (Темы)
+                    </h2>
+                </div>
+                <nav class="flex flex-col" id="topicTabs">
+                    <!-- JS Injected -->
+                </nav>
+            </div>
+
+            <!-- Content -->
+            <div class="w-full md:w-3/4 p-6 md:p-10 relative bg-white">
+                <div id="contentDisplay" class="fade-in">
+                    <!-- JS Injected -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Topic Stats -->
+        <div class="mt-12">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-chart-pie text-indigo-600"></i> Stats
+                </h2>
+                <div class="text-sm bg-white px-3 py-1 rounded-lg shadow-sm text-gray-500">
+                    По каждой теме
+                </div>
+            </div>
+            <div id="topicStatsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- JS Injected -->
+            </div>
+        </div>
+
+        <!-- 7 Day Plan -->
+        <div class="mt-12">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-calendar-check text-purple-600"></i> План на 7 дней
+                </h2>
+                <div class="text-sm bg-white px-3 py-1 rounded-lg shadow-sm text-gray-500">
+                    <span id="daysCompleted">0</span>/7 выполнено
+                </div>
+            </div>
+            
+            <p class="text-sm text-gray-500 mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100 inline-block">
+                <i class="fas fa-info-circle text-blue-500 mr-2"></i>Нажимай на карточки дней, чтобы отмечать их выполненными!
+            </p>
+
+            <div class="bg-white rounded-2xl shadow-md p-6 overflow-x-auto timeline-scroll">
+                <div class="flex gap-4 min-w-max pb-4" id="planTimeline">
+                    <!-- JS Injected -->
+                </div>
+            </div>
+            
+            <!-- Reset Button -->
+            <div class="mt-6 text-center flex items-center justify-center gap-4">
+                <button onclick="exportResults()" class="text-xs text-indigo-500 hover:text-indigo-700 underline">Экспортировать результаты</button>
+                <button onclick="exportPdfReport()" class="text-xs text-gray-500 hover:text-gray-700 underline">Export PDF</button>
+                <button onclick="exportWordReport()" class="text-xs text-emerald-500 hover:text-emerald-700 underline">Export Word</button>
+                <button onclick="resetProgress()" class="text-xs text-red-400 hover:text-red-600 underline">Сбросить весь прогресс</button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-10 text-center mt-10 border-t border-gray-700">
+        <p class="font-bold text-lg mb-2">Never Give Up! 🚀</p>
+        <p class="opacity-60 text-sm">Создано специально для Дианы</p>
+    </footer>
+
+    <!-- Logic -->
+    <script>
+        /* --- 1. DATA --- */
+        const APP_VERSION = "2.2";
+        const STORAGE_KEY_V2 = "diana_progress_v2";
+        const LEGACY_QUIZ_KEY = "diana_quiz_state";
+        const LEGACY_DAY_KEY = "diana_day_state";
+        const CHALLENGE_DURATION_SECONDS = 120;
+
+        const topics = [
+            {
+                id: 'possessive',
+                title: "Притяжательный падеж ('s)",
+                icon: "fa-key",
+                summary: "Чей? Кого? Если можно вставить 'чей', ставим 's.",
+                theory: `
+                    <div class="bg-blue-50 p-5 rounded-xl mb-6 text-blue-900 border-l-4 border-blue-500 shadow-sm">
+                        <h4 class="font-bold mb-2 flex items-center"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Главное правило</h4>
+                        <ul class="space-y-2 text-sm">
+                            <li>1. <strong>Единственное число:</strong> Владелец + <b>’s</b> <br><span class="opacity-70 ml-4">Cat<b>’s</b> tail, Kate<b>’s</b> book</span></li>
+                            <li>2. <strong>Множественное на -s:</strong> Владелец + <b>’</b> <br><span class="opacity-70 ml-4">Teachers<b>’</b> room</span></li>
+                            <li>3. <strong>Исключения (children, men):</strong> + <b>’s</b> <br><span class="opacity-70 ml-4">Children<b>’s</b> room</span></li>
+                        </ul>
+                    </div>
+                    <div class="text-sm text-gray-600 italic mb-4">
+                        <i class="fas fa-exclamation-triangle text-orange-400 mr-1"></i> <strong>Лайфхак:</strong> Не путай множественное число (Friends are here) и принадлежность (My friend's car).
+                    </div>
+                `,
+                tasks: [
+                    { id: "poss_mc_1", type: "mc", prompt: "This is ___ bag.", options: ["Charlies'", "Charlie's"], correct: 1, explanation: "Имя Charlie в ед. числе, поэтому нужен 's." },
+                    { id: "poss_mc_2", type: "mc", prompt: "These ___ flowers are beautiful.", options: ["girls'", "girl's"], correct: 0, explanation: "'These' указывает на множественное число: girls'." },
+                    { id: "poss_fill_1", type: "fill", prompt: "The ___ room is clean. (children)", correct: "children's", explanation: "Children - исключение, добавляем 's.", acceptedAnswers: ["children's", "childrens"] },
+                    { id: "poss_tf_1", type: "tf", prompt: "Для owners во множественном числе на -s обычно ставится только апостроф.", correct: true, explanation: "Верно: teachers' room, parents' house." },
+                    { id: "poss_mc_3", type: "mc", prompt: "My ___ phone is new.", options: ["brother's", "brothers'"], correct: 0, explanation: "Один брат -> brother's." },
+                    { id: "poss_mc_4", type: "mc", prompt: "The ___ toys are everywhere.", options: ["childrens'", "children's"], correct: 1, explanation: "Children - неправильное мн. число, поэтому children's." },
+                    { id: "poss_mc_extra_1", type: "mc", prompt: "The ___ office is on the third floor.", options: ["manager's", "managers'"], correct: 0, explanation: "Речь об одном менеджере: manager's." },
+                    { id: "poss_mc_extra_2", type: "mc", prompt: "These are my ___ bikes.", options: ["friends'", "friend's"], correct: 0, explanation: "Несколько друзей: friends'." },
+                    { id: "poss_mc_extra_3", type: "mc", prompt: "The ___ room has new toys.", options: ["children's", "childrens'"], correct: 0, explanation: "Children - исключение, поэтому children's." },
+                    { id: "poss_mc_extra_4", type: "mc", prompt: "I borrowed ___ laptop yesterday.", options: ["James's", "James"], correct: 0, explanation: "Для принадлежности нужен апостроф и -s: James's." },
+                    { id: "poss_fill_2", type: "fill", prompt: "This is my ___ car. (parents)", correct: "parents'", explanation: "Parents оканчивается на -s, ставим только апостроф.", acceptedAnswers: ["parents'"] },
+                    { id: "poss_tf_2", type: "tf", prompt: "Форма \"James' bike\" может быть корректной для имени James.", correct: true, explanation: "Да, для имен на -s часто используется только апостроф." }
+                ]
+            },
+            {
+                id: 'forsince',
+                title: "For vs Since",
+                icon: "fa-clock",
+                summary: "Как долго? (For) или С какого момента? (Since)",
+                theory: `
+                    <div class="bg-purple-50 p-5 rounded-xl mb-6 text-purple-900 border-l-4 border-purple-500 shadow-sm">
+                         <h4 class="font-bold mb-2 flex items-center"><i class="fas fa-hourglass-half text-purple-500 mr-2"></i>Формула времени</h4>
+                        <div class="grid md:grid-cols-2 gap-4 mt-2">
+                            <div class="bg-white p-3 rounded-lg shadow-sm">
+                                <strong class="text-purple-600 block mb-1">Since (С момента)</strong>
+                                <span class="text-xs">2010, Monday, 9:00 AM.</span><br>
+                                <em class="text-xs text-gray-500">"Я здесь с утра."</em>
+                            </div>
+                            <div class="bg-white p-3 rounded-lg shadow-sm">
+                                <strong class="text-blue-600 block mb-1">For (В течение)</strong>
+                                <span class="text-xs">5 years, 2 hours, ages.</span><br>
+                                <em class="text-xs text-gray-500">"Жду уже 2 часа."</em>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                tasks: [
+                    { id: "fs_mc_1", type: "mc", prompt: "I have known him ___ 2018.", options: ["for", "since"], correct: 1, explanation: "2018 - точка отсчета, значит since." },
+                    { id: "fs_mc_2", type: "mc", prompt: "We've been here ___ two hours.", options: ["since", "for"], correct: 1, explanation: "Two hours - период времени, значит for." },
+                    { id: "fs_fill_1", type: "fill", prompt: "She has lived here ___ last year.", correct: "since", explanation: "Last year - момент начала, нужен since.", acceptedAnswers: ["since"] },
+                    { id: "fs_tf_1", type: "tf", prompt: "С months и years мы чаще используем for, а не since.", correct: true, explanation: "Да, это длительность: for months/for years." },
+                    { id: "fs_mc_3", type: "mc", prompt: "He has worked here ___ Monday.", options: ["for", "since"], correct: 1, explanation: "Monday - точка начала, нужен since." },
+                    { id: "fs_mc_4", type: "mc", prompt: "They have been friends ___ ten years.", options: ["since", "for"], correct: 1, explanation: "Ten years - длительность, нужен for." },
+                    { id: "fs_mc_extra_1", type: "mc", prompt: "I have studied English ___ three months.", options: ["for", "since"], correct: 0, explanation: "Three months - длительность, значит for." },
+                    { id: "fs_mc_extra_2", type: "mc", prompt: "She has worked remotely ___ 2022.", options: ["since", "for"], correct: 0, explanation: "2022 - момент начала, значит since." },
+                    { id: "fs_mc_extra_3", type: "mc", prompt: "We have been married ___ a long time.", options: ["since", "for"], correct: 1, explanation: "A long time - период, поэтому for." },
+                    { id: "fs_mc_extra_4", type: "mc", prompt: "He has felt better ___ this morning.", options: ["for", "since"], correct: 1, explanation: "This morning - точка начала, значит since." },
+                    { id: "fs_fill_2", type: "fill", prompt: "We have waited ___ 30 minutes.", correct: "for", explanation: "30 minutes - период времени, используем for.", acceptedAnswers: ["for"] },
+                    { id: "fs_tf_2", type: "tf", prompt: "В выражении \"since 9 o'clock\" используется since правильно.", correct: true, explanation: "Да, 9 o'clock - конкретный момент начала." }
+                ]
+            },
+            {
+                id: 'pronouns',
+                title: "Местоимения & It's/Its",
+                icon: "fa-user-tag",
+                summary: "It's = It is. Its = Его. Myself = Я сам.",
+                theory: `
+                    <div class="bg-green-50 p-5 rounded-xl mb-6 text-green-900 border-l-4 border-green-500 shadow-sm">
+                        <h4 class="font-bold mb-2">⚡ Разница в нюансах:</h4>
+                        <ul class="list-disc ml-5 space-y-1 text-sm">
+                            <li><strong>It’s</strong> = <em>It is</em> (It’s cold = Холодно).</li>
+                            <li><strong>Its</strong> = <em>Его/Ее</em> (The cat eats its food).</li>
+                            <li><strong>Возвратные (-self):</strong> Действие на себя (I cut <strong>myself</strong>).</li>
+                        </ul>
+                    </div>
+                `,
+                tasks: [
+                    { id: "pro_mc_1", type: "mc", prompt: "___ a sunny day today.", options: ["It's", "Its"], correct: 0, explanation: "Это сокращение от It is -> It's." },
+                    { id: "pro_mc_2", type: "mc", prompt: "The cat is licking ___ paws.", options: ["it's", "its"], correct: 1, explanation: "Притяжательное местоимение: its." },
+                    { id: "pro_fill_1", type: "fill", prompt: "I cut ___ by accident.", correct: "myself", explanation: "Возвратное местоимение: myself.", acceptedAnswers: ["myself"] },
+                    { id: "pro_tf_1", type: "tf", prompt: "\"It's\" всегда означает \"it is\" или \"it has\".", correct: true, explanation: "Да, это форма сокращения, не притяжательная." },
+                    { id: "pro_mc_3", type: "mc", prompt: "The company changed ___ logo last year.", options: ["it's", "its"], correct: 1, explanation: "Притяжательная форма без апострофа: its." },
+                    { id: "pro_mc_4", type: "mc", prompt: "She made this cake by ___.", options: ["herself", "her"], correct: 0, explanation: "После by для значения 'сама' нужно herself." },
+                    { id: "pro_mc_extra_1", type: "mc", prompt: "The dog hurt ___ while jumping.", options: ["itself", "its"], correct: 0, explanation: "Нужно возвратное местоимение: itself." },
+                    { id: "pro_mc_extra_2", type: "mc", prompt: "___ raining again.", options: ["Its", "It's"], correct: 1, explanation: "Сокращение от It is: It's." },
+                    { id: "pro_mc_extra_3", type: "mc", prompt: "The robot updates ___ software automatically.", options: ["it's", "its"], correct: 1, explanation: "Притяжательная форма без апострофа: its." },
+                    { id: "pro_mc_extra_4", type: "mc", prompt: "They cooked dinner by ___.", options: ["themselves", "them"], correct: 0, explanation: "После by в значении 'сами' требуется themselves." },
+                    { id: "pro_fill_2", type: "fill", prompt: "We enjoyed ___ at the party.", correct: "ourselves", explanation: "Возвратное местоимение для we - ourselves.", acceptedAnswers: ["ourselves"] },
+                    { id: "pro_tf_2", type: "tf", prompt: "\"Its\" может означать \"it is\".", correct: false, explanation: "Нет, \"its\" - только притяжательное местоимение." }
+                ]
+            },
+            {
+                id: 'firstcond',
+                title: "First Conditional",
+                icon: "fa-random",
+                summary: "If (Present) ... Will (Future).",
+                theory: `
+                    <div class="bg-yellow-50 p-5 rounded-xl mb-6 text-yellow-900 border-l-4 border-yellow-500 shadow-sm">
+                        <h4 class="font-bold mb-2 text-center text-lg">⚠️ Золотое правило</h4>
+                        <p class="text-center mb-3">В части с <strong>IF</strong> (если) НЕЛЬЗЯ ставить WILL!</p>
+                        <div class="bg-white p-3 rounded border border-yellow-200 text-center font-mono text-sm">
+                            If + Present Simple, ... Future (Will)
+                        </div>
+                        <p class="text-center text-xs text-gray-500 mt-2">If it rains (Present), we will stay (Future) home.</p>
+                    </div>
+                `,
+                tasks: [
+                    { id: "fc_mc_1", type: "mc", prompt: "If it ___ tomorrow, we will stay home.", options: ["rain", "rains", "will rain"], correct: 1, explanation: "После if в первом условном - Present Simple." },
+                    { id: "fc_mc_2", type: "mc", prompt: "If I have time, I ___ you.", options: ["will help", "help"], correct: 0, explanation: "В результате используем will + verb." },
+                    { id: "fc_fill_1", type: "fill", prompt: "If we miss the bus, we ___ a taxi.", correct: "will take", explanation: "Результат: will take.", acceptedAnswers: ["will take", "take"] },
+                    { id: "fc_tf_1", type: "tf", prompt: "В части с if можно ставить will, если это First Conditional.", correct: false, explanation: "Нет, после if обычно Present Simple." },
+                    { id: "fc_mc_3", type: "mc", prompt: "If she ___ early, we will start at 9.", options: ["arrives", "will arrive"], correct: 0, explanation: "После if используем Present Simple: arrives." },
+                    { id: "fc_mc_4", type: "mc", prompt: "If they study hard, they ___ the exam.", options: ["pass", "will pass"], correct: 1, explanation: "В главной части First Conditional: will + verb." },
+                    { id: "fc_mc_extra_1", type: "mc", prompt: "If you ___ now, you will catch the train.", options: ["leave", "will leave"], correct: 0, explanation: "После if в First Conditional нужен Present Simple: leave." },
+                    { id: "fc_mc_extra_2", type: "mc", prompt: "If it is sunny, we ___ to the beach.", options: ["go", "will go"], correct: 1, explanation: "В главной части используем will + verb." },
+                    { id: "fc_mc_extra_3", type: "mc", prompt: "If they ___ late, we will begin without them.", options: ["are", "will be"], correct: 0, explanation: "В if-части нужен Present Simple: are." },
+                    { id: "fc_mc_extra_4", type: "mc", prompt: "If I finish early, I ___ you tonight.", options: ["call", "will call"], correct: 1, explanation: "Результат в будущем: will call." },
+                    { id: "fc_fill_2", type: "fill", prompt: "If I see Tom, I ___ him the news.", correct: "will tell", explanation: "Результат в будущем: will tell.", acceptedAnswers: ["will tell", "tell"] },
+                    { id: "fc_tf_2", type: "tf", prompt: "В предложении \"If it rains, we will cancel the picnic\" форма корректна.", correct: true, explanation: "Да, if + Present Simple и will в главной части." }
+                ]
+            },
+            {
+                id: 'perfectpast',
+                title: "Present Perfect vs Past",
+                icon: "fa-history",
+                summary: "Результат сейчас vs Конкретное прошлое.",
+                theory: `
+                    <div class="bg-red-50 p-5 rounded-xl mb-6 text-red-900 border-l-4 border-red-500 shadow-sm">
+                        <h4 class="font-bold mb-2">🔍 Слова-маркеры (подсказки)</h4>
+                        <div class="grid grid-cols-2 gap-4 mt-2">
+                            <div>
+                                <strong class="text-blue-600 block border-b border-blue-200 mb-1">Past Simple</strong>
+                                <span class="text-xs block">Yesterday</span>
+                                <span class="text-xs block">Last week</span>
+                                <span class="text-xs block">In 2010</span>
+                                <span class="text-xs block">Ago</span>
+                                <em class="text-xs text-gray-500 mt-1 block">Факт в прошлом.</em>
+                            </div>
+                            <div>
+                                <strong class="text-purple-600 block border-b border-purple-200 mb-1">Present Perfect</strong>
+                                <span class="text-xs block">Just / Already</span>
+                                <span class="text-xs block">Yet</span>
+                                <span class="text-xs block">Ever / Never</span>
+                                <span class="text-xs block">Since / For</span>
+                                <em class="text-xs text-gray-500 mt-1 block">Результат или опыт.</em>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                tasks: [
+                    { id: "pp_mc_1", type: "mc", prompt: "I ___ him yesterday.", options: ["saw", "have seen"], correct: 0, explanation: "Yesterday - маркер Past Simple." },
+                    { id: "pp_mc_2", type: "mc", prompt: "___ you ever been to London?", options: ["Did", "Have"], correct: 1, explanation: "Ever + опыт: Have you ever...?" },
+                    { id: "pp_fill_1", type: "fill", prompt: "I have ___ my homework already.", correct: "finished", explanation: "Already + Present Perfect: have finished.", acceptedAnswers: ["finished"] },
+                    { id: "pp_tf_1", type: "tf", prompt: "Фраза 'We met in 2015' использует Past Simple корректно.", correct: true, explanation: "Да, указан конкретный момент в прошлом." },
+                    { id: "pp_mc_3", type: "mc", prompt: "She ___ just ___ the email.", options: ["has / sent", "did / send"], correct: 0, explanation: "Just обычно с Present Perfect: has sent." },
+                    { id: "pp_mc_4", type: "mc", prompt: "We ___ to Paris in 2019.", options: ["have gone", "went"], correct: 1, explanation: "In 2019 - конкретное прошлое, Past Simple: went." },
+                    { id: "pp_mc_extra_1", type: "mc", prompt: "I have never ___ a snake.", options: ["seen", "saw"], correct: 0, explanation: "Never обычно с Present Perfect: have never seen." },
+                    { id: "pp_mc_extra_2", type: "mc", prompt: "They ___ their homework an hour ago.", options: ["have finished", "finished"], correct: 1, explanation: "An hour ago - маркер Past Simple: finished." },
+                    { id: "pp_mc_extra_3", type: "mc", prompt: "___ you already eaten?", options: ["Did", "Have"], correct: 1, explanation: "Already с текущим результатом: Have you already...?" },
+                    { id: "pp_mc_extra_4", type: "mc", prompt: "She ___ to Berlin last summer.", options: ["has gone", "went"], correct: 1, explanation: "Last summer указывает на Past Simple: went." },
+                    { id: "pp_fill_2", type: "fill", prompt: "Have you ___ eaten sushi?", correct: "ever", explanation: "Для опыта обычно используем ever в вопросах.", acceptedAnswers: ["ever"] },
+                    { id: "pp_tf_2", type: "tf", prompt: "\"I have visited Rome last year\" - грамматически правильно.", correct: false, explanation: "Нет, с last year нужен Past Simple: I visited Rome last year." }
+                ]
+            }
+        ];
+
+        const studyPlan = [
+            { day: 1, title: "Притяжательный ('s)", task: "Повтори правило и выполни 2 задания по теме." },
+            { day: 2, title: "It's vs Its", task: "Разбери разницу и пройди мини-практику." },
+            { day: 3, title: "For/Since", task: "Отработай точки начала и длительность." },
+            { day: 4, title: "First Conditional", task: "Собери 5 предложений по формуле if + present." },
+            { day: 5, title: "Present Perfect vs Past", task: "Тренируй маркеры времени и примеры." },
+            { day: 6, title: "Смешанная практика", task: "Выполни задачи из разных тем." },
+            { day: 7, title: "Финальный день", task: "Проверь слабые места и заверши план." }
+        ];
+
+        /* --- 2. STATE MANAGEMENT (LocalStorage) --- */
+        let activeTopicIndex = 0;
+        let progressState = null;
+        const topicCharts = {};
+        let activeChallengeTimer = null;
+        let activeChallengeTickTimer = null;
+        let audioCtx = null;
+        let tickNoiseBuffer = null;
+        const TASK_SCROLL_OFFSET_PX = 108;
+        const ANSWER_COOLDOWN_MS = 2000;
+        const CHALLENGE_TICK_VOLUME = 0.03;
+        const TOPIC_PALETTES = {
+            possessive: {
+                frame: "border-blue-200 bg-blue-50/70",
+                frameTitle: "text-blue-900",
+                frameSubtle: "text-blue-700",
+                controlBtn: "border-blue-200 text-blue-700 hover:bg-blue-100",
+                startBtn: "bg-blue-600 border border-blue-700 text-white hover:bg-blue-700",
+                progressBar: "bg-blue-500",
+                floating: "bg-blue-50 border-blue-500 text-blue-900",
+                lockCard: "bg-blue-50/95 border-blue-300 text-blue-900"
+            },
+            forsince: {
+                frame: "border-purple-200 bg-purple-50/70",
+                frameTitle: "text-purple-900",
+                frameSubtle: "text-purple-700",
+                controlBtn: "border-purple-200 text-purple-700 hover:bg-purple-100",
+                startBtn: "bg-purple-600 border border-purple-700 text-white hover:bg-purple-700",
+                progressBar: "bg-purple-500",
+                floating: "bg-purple-50 border-purple-500 text-purple-900",
+                lockCard: "bg-purple-50/95 border-purple-300 text-purple-900"
+            },
+            pronouns: {
+                frame: "border-green-200 bg-green-50/70",
+                frameTitle: "text-green-900",
+                frameSubtle: "text-green-700",
+                controlBtn: "border-green-200 text-green-700 hover:bg-green-100",
+                startBtn: "bg-green-600 border border-green-700 text-white hover:bg-green-700",
+                progressBar: "bg-green-500",
+                floating: "bg-green-50 border-green-500 text-green-900",
+                lockCard: "bg-green-50/95 border-green-300 text-green-900"
+            },
+            firstcond: {
+                frame: "border-yellow-200 bg-yellow-50/70",
+                frameTitle: "text-yellow-900",
+                frameSubtle: "text-yellow-700",
+                controlBtn: "border-yellow-200 text-yellow-700 hover:bg-yellow-100",
+                startBtn: "bg-yellow-400 border border-yellow-500 text-yellow-950 hover:bg-yellow-500",
+                progressBar: "bg-yellow-500",
+                floating: "bg-yellow-50 border-yellow-500 text-yellow-900",
+                lockCard: "bg-yellow-50/95 border-yellow-300 text-yellow-900"
+            },
+            perfcpast: {
+                frame: "border-red-200 bg-red-50/70",
+                frameTitle: "text-red-900",
+                frameSubtle: "text-red-700",
+                controlBtn: "border-red-200 text-red-700 hover:bg-red-100",
+                startBtn: "bg-red-600 border border-red-700 text-white hover:bg-red-700",
+                progressBar: "bg-red-500",
+                floating: "bg-red-50 border-red-500 text-red-900",
+                lockCard: "bg-red-50/95 border-red-300 text-red-900"
+            }
+        };
+        const uiState = {
+            shakeTaskKey: null,
+            cooldownUntilByTaskKey: {}
+        };
+
+        function safeParse(value, fallback) {
+            try {
+                return JSON.parse(value);
+            } catch (_) {
+                return fallback;
+            }
+        }
+
+        function normalizeAnswer(value) {
+            return String(value || "").trim().toLowerCase();
+        }
+
+        function getTopicPalette(topicId) {
+            return TOPIC_PALETTES[topicId] || {
+                frame: "border-indigo-200 bg-indigo-50/70",
+                frameTitle: "text-indigo-900",
+                frameSubtle: "text-indigo-700",
+                controlBtn: "border-indigo-200 text-indigo-700 hover:bg-indigo-100",
+                startBtn: "bg-indigo-600 border border-indigo-700 text-white hover:bg-indigo-700",
+                progressBar: "bg-indigo-500",
+                floating: "bg-indigo-50 border-indigo-500 text-indigo-900",
+                lockCard: "bg-indigo-50/95 border-indigo-300 text-indigo-900"
+            };
+        }
+
+        function getTopicChartColors(topicId) {
+            const colors = {
+                possessive: { solid: "#2563eb", soft: "rgba(37,99,235,0.28)", accentText: "text-blue-700", accentBg: "bg-blue-50" },
+                forsince: { solid: "#7c3aed", soft: "rgba(124,58,237,0.28)", accentText: "text-purple-700", accentBg: "bg-purple-50" },
+                pronouns: { solid: "#16a34a", soft: "rgba(22,163,74,0.28)", accentText: "text-green-700", accentBg: "bg-green-50" },
+                firstcond: { solid: "#ca8a04", soft: "rgba(202,138,4,0.30)", accentText: "text-yellow-700", accentBg: "bg-yellow-50" },
+                perfcpast: { solid: "#dc2626", soft: "rgba(220,38,38,0.28)", accentText: "text-red-700", accentBg: "bg-red-50" }
+            };
+            return colors[topicId] || { solid: "#4f46e5", soft: "rgba(79,70,229,0.28)", accentText: "text-indigo-700", accentBg: "bg-indigo-50" };
+        }
+
+        function scrollToElementWithOffset(el, offset = TASK_SCROLL_OFFSET_PX) {
+            if (!el) return;
+            const targetTop = Math.max(0, el.getBoundingClientRect().top + window.pageYOffset - offset);
+            window.scrollTo({ top: targetTop, behavior: "smooth" });
+        }
+
+        function scrollToNextTask(topicId, currentTaskIndex) {
+            const nextTaskEl = document.getElementById(`task-${topicId}-${currentTaskIndex + 1}`);
+            if (nextTaskEl) {
+                scrollToElementWithOffset(nextTaskEl, TASK_SCROLL_OFFSET_PX);
+                return;
+            }
+            const summaryEl = document.getElementById("topicStatsContainer");
+            if (summaryEl) {
+                scrollToElementWithOffset(summaryEl, 96);
+            }
+        }
+
+        function getTaskCooldownKey(topicId, taskId) {
+            return `${topicId}:${taskId}`;
+        }
+
+        function getTaskCooldownLeftMs(topicId, taskId) {
+            const key = getTaskCooldownKey(topicId, taskId);
+            const expiresAt = Number(uiState.cooldownUntilByTaskKey[key] || 0);
+            if (!expiresAt) return 0;
+            const left = expiresAt - Date.now();
+            if (left <= 0) {
+                delete uiState.cooldownUntilByTaskKey[key];
+                return 0;
+            }
+            return left;
+        }
+
+        function startTaskCooldown(topicId, taskId, durationMs = ANSWER_COOLDOWN_MS) {
+            const key = getTaskCooldownKey(topicId, taskId);
+            const expiresAt = Date.now() + durationMs;
+            uiState.cooldownUntilByTaskKey[key] = expiresAt;
+            setTimeout(() => {
+                if (uiState.cooldownUntilByTaskKey[key] !== expiresAt) return;
+                delete uiState.cooldownUntilByTaskKey[key];
+                const topic = topics[activeTopicIndex];
+                if (topic && topic.id === topicId) {
+                    renderContent();
+                }
+            }, durationMs + 30);
+        }
+
+        function createDefaultTaskState() {
+            return {
+                attempts: 0,
+                solved: false,
+                correct: false,
+                lastAnswer: null,
+                lastWasCorrect: null,
+                lastUpdated: null,
+                challengeWrong: false
+            };
+        }
+
+        function createDefaultChallengeTopicState() {
+            return {
+                locked: true,
+                isRunning: false,
+                isCompleted: false,
+                startedAt: null,
+                endAt: null,
+                lastResult: null,
+                bestTimeSeconds: null
+            };
+        }
+
+        function createDefaultChallengeState() {
+            const topicState = {};
+            topics.forEach(topic => {
+                topicState[topic.id] = createDefaultChallengeTopicState();
+            });
+            return {
+                soundEnabled: true,
+                topicState
+            };
+        }
+
+        function createDefaultProgress() {
+            const topicTaskState = {};
+            topics.forEach(topic => {
+                topicTaskState[topic.id] = {};
+                topic.tasks.forEach(task => {
+                    topicTaskState[topic.id][task.id] = createDefaultTaskState();
+                });
+            });
+
+            const dayState = {};
+            studyPlan.forEach((_, idx) => {
+                dayState[idx] = false;
+            });
+
+            const base = {
+                appVersion: APP_VERSION,
+                topicTaskState,
+                dayState,
+                challenge: createDefaultChallengeState(),
+                stats: {
+                    xp: 0,
+                    progressPercent: 0,
+                    completedTasks: 0,
+                    totalTasks: topics.reduce((sum, topic) => sum + topic.tasks.length, 0),
+                    correctCount: 0,
+                    attemptCount: 0
+                }
+            };
+            base.stats = computeStats(base);
+            return base;
+        }
+
+        function normalizeProgress(raw) {
+            const base = createDefaultProgress();
+            if (!raw || typeof raw !== "object") return base;
+
+            const normalized = {
+                appVersion: APP_VERSION,
+                topicTaskState: {},
+                dayState: {},
+                challenge: createDefaultChallengeState(),
+                stats: base.stats
+            };
+
+            topics.forEach(topic => {
+                normalized.topicTaskState[topic.id] = {};
+                topic.tasks.forEach(task => {
+                    const savedTaskState = raw.topicTaskState &&
+                        raw.topicTaskState[topic.id] &&
+                        raw.topicTaskState[topic.id][task.id];
+                    normalized.topicTaskState[topic.id][task.id] = {
+                        ...createDefaultTaskState(),
+                        ...(savedTaskState || {})
+                    };
+                });
+
+                const rawChallengeTopicState = raw.challenge &&
+                    raw.challenge.topicState &&
+                    raw.challenge.topicState[topic.id];
+                normalized.challenge.topicState[topic.id] = {
+                    ...createDefaultChallengeTopicState(),
+                    ...(rawChallengeTopicState || {})
+                };
+            });
+
+            studyPlan.forEach((_, idx) => {
+                normalized.dayState[idx] = Boolean(raw.dayState && raw.dayState[idx]);
+            });
+
+            normalized.challenge.soundEnabled = raw.challenge && typeof raw.challenge.soundEnabled === "boolean"
+                ? raw.challenge.soundEnabled
+                : true;
+
+            normalized.stats = computeStats(normalized);
+            return normalized;
+        }
+
+        function migrateLegacyState() {
+            const migrated = createDefaultProgress();
+            const legacyQuiz = safeParse(localStorage.getItem(LEGACY_QUIZ_KEY), {});
+            const legacyDays = safeParse(localStorage.getItem(LEGACY_DAY_KEY), {});
+            const migratedAt = new Date().toISOString();
+
+            topics.forEach(topic => {
+                topic.tasks.forEach((task, taskIdx) => {
+                    const legacyKey = `${topic.id}-${taskIdx}`;
+                    if (!Object.prototype.hasOwnProperty.call(legacyQuiz, legacyKey)) return;
+
+                    const legacyValue = legacyQuiz[legacyKey];
+                    const taskState = migrated.topicTaskState[topic.id][task.id];
+                    taskState.attempts = 1;
+                    taskState.lastAnswer = legacyValue;
+                    taskState.lastUpdated = migratedAt;
+
+                    if (task.type === "mc" && Number(legacyValue) === task.correct) {
+                        taskState.correct = true;
+                        taskState.solved = true;
+                        taskState.lastWasCorrect = true;
+                    } else {
+                        taskState.lastWasCorrect = false;
+                    }
+                });
+            });
+
+            studyPlan.forEach((_, idx) => {
+                migrated.dayState[idx] = legacyDays && legacyDays[idx] === true;
+            });
+
+            migrated.stats = computeStats(migrated);
+            return migrated;
+        }
+
+        function loadProgress() {
+            const savedV2 = safeParse(localStorage.getItem(STORAGE_KEY_V2), null);
+            if (savedV2) {
+                progressState = normalizeProgress(savedV2);
+                updateStats();
+                return;
+            }
+
+            const hasLegacy = localStorage.getItem(LEGACY_QUIZ_KEY) || localStorage.getItem(LEGACY_DAY_KEY);
+            if (hasLegacy) {
+                progressState = normalizeProgress(migrateLegacyState());
+                localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(progressState));
+            } else {
+                progressState = createDefaultProgress();
+                localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(progressState));
+            }
+            updateStats();
+        }
+
+        function saveProgress() {
+            progressState.stats = computeStats(progressState);
+            localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(progressState));
+            updateStats();
+        }
+
+        function resetProgress() {
+            if (confirm("Вы уверены, что хотите сбросить весь прогресс?")) {
+                console.log("[reset] Full progress reset started");
+                stopChallengeTimer();
+                localStorage.removeItem(STORAGE_KEY_V2);
+                localStorage.removeItem(LEGACY_QUIZ_KEY);
+                localStorage.removeItem(LEGACY_DAY_KEY);
+                Object.keys(topicCharts).forEach(chartId => {
+                    if (topicCharts[chartId]) topicCharts[chartId].destroy();
+                    delete topicCharts[chartId];
+                });
+                uiState.shakeTaskKey = null;
+                uiState.cooldownUntilByTaskKey = {};
+                activeTopicIndex = 0;
+                progressState = createDefaultProgress();
+                saveProgress();
+                renderTabs();
+                renderContent();
+                renderTimeline();
+                updateStats();
+                console.log("[reset] Full progress reset completed");
+            }
+        }
+
+        window.resetProgress = resetProgress;
+
+        /* --- 3. STATS + EXPORT --- */
+        function getTaskState(topicId, taskId) {
+            return progressState.topicTaskState[topicId][taskId];
+        }
+
+        function getTopicSolvedCount(topicId) {
+            const topic = topics.find(t => t.id === topicId);
+            if (!topic) return 0;
+            return topic.tasks.filter(task => getTaskState(topicId, task.id).solved).length;
+        }
+
+        function getChallengeState(topicId) {
+            if (!progressState.challenge) {
+                progressState.challenge = createDefaultChallengeState();
+            }
+            if (!progressState.challenge.topicState[topicId]) {
+                progressState.challenge.topicState[topicId] = createDefaultChallengeTopicState();
+            }
+            return progressState.challenge.topicState[topicId];
+        }
+
+        function formatTime(totalSeconds) {
+            const safe = Math.max(0, Number(totalSeconds || 0));
+            const mm = String(Math.floor(safe / 60)).padStart(2, '0');
+            const ss = String(safe % 60).padStart(2, '0');
+            return `${mm}:${ss}`;
+        }
+
+        function getRemainingSeconds(topicId) {
+            const challenge = getChallengeState(topicId);
+            if (!challenge.isRunning || !challenge.endAt) return 0;
+            const diffMs = new Date(challenge.endAt).getTime() - Date.now();
+            return Math.max(0, Math.ceil(diffMs / 1000));
+        }
+
+        function syncChallengeState(topicId) {
+            const challenge = getChallengeState(topicId);
+            if (!challenge.isRunning || !challenge.endAt) return;
+            if (new Date(challenge.endAt).getTime() <= Date.now()) {
+                completeChallenge(topicId, "timeout");
+            }
+        }
+
+        function renderChallengeHud() {
+            const topic = topics[activeTopicIndex];
+            if (!topic || !progressState) return;
+            const challenge = getChallengeState(topic.id);
+            const total = topic.tasks.length;
+            const solved = getTopicSolvedCount(topic.id);
+            let remaining = CHALLENGE_DURATION_SECONDS;
+            if (challenge.isRunning) {
+                remaining = getRemainingSeconds(topic.id);
+            } else if (challenge.lastResult && challenge.lastResult.status === "timeout") {
+                remaining = 0;
+            }
+            const progressPercent = total ? Math.round((solved / total) * 100) : 0;
+
+            const timerEl = document.getElementById("challengeTimeLeft");
+            const solvedEl = document.getElementById("challengeSolvedCount");
+            const progressEl = document.getElementById("challengeProgressBar");
+            const statusEl = document.getElementById("challengeStatusText");
+            const floatingTimerEl = document.getElementById("floatingChallengeTimeLeft");
+            const floatingSolvedEl = document.getElementById("floatingChallengeSolvedCount");
+            const floatingStatusEl = document.getElementById("floatingChallengeStatusText");
+            if (timerEl) timerEl.textContent = formatTime(remaining);
+            if (solvedEl) solvedEl.textContent = `${solved}/${total}`;
+            if (progressEl) progressEl.style.width = `${progressPercent}%`;
+            if (floatingTimerEl) floatingTimerEl.textContent = formatTime(remaining);
+            if (floatingSolvedEl) floatingSolvedEl.textContent = `${solved}/${total}`;
+
+            if (statusEl) {
+                if (challenge.isRunning) {
+                    statusEl.textContent = "Challenge is running";
+                } else if (challenge.lastResult && challenge.lastResult.status === "success") {
+                    statusEl.textContent = `Success in ${formatTime(challenge.lastResult.timeSpentSeconds)}`;
+                } else if (challenge.lastResult && challenge.lastResult.status === "timeout") {
+                    statusEl.textContent = "Time is up";
+                } else {
+                    statusEl.textContent = "Locked";
+                }
+            }
+
+            if (floatingStatusEl) {
+                if (challenge.isRunning) {
+                    floatingStatusEl.textContent = "Challenge is running";
+                } else if (challenge.lastResult && challenge.lastResult.status === "success") {
+                    floatingStatusEl.textContent = `Success in ${formatTime(challenge.lastResult.timeSpentSeconds)}`;
+                } else if (challenge.lastResult && challenge.lastResult.status === "timeout") {
+                    floatingStatusEl.textContent = "Time is up";
+                } else {
+                    floatingStatusEl.textContent = "Locked";
+                }
+            }
+        }
+
+        function startChallengeTimer(topicId) {
+            if (activeChallengeTimer) {
+                clearInterval(activeChallengeTimer);
+                activeChallengeTimer = null;
+            }
+            startTickingClock(topicId);
+            activeChallengeTimer = setInterval(() => {
+                const topic = topics[activeTopicIndex];
+                if (!topic || topic.id !== topicId) return;
+                const challenge = getChallengeState(topic.id);
+                if (!challenge.isRunning) return;
+                const remaining = getRemainingSeconds(topic.id);
+                if (remaining <= 0) {
+                    completeChallenge(topic.id, "timeout");
+                    return;
+                }
+                renderChallengeHud();
+            }, 250);
+        }
+
+        function stopChallengeTimer() {
+            if (activeChallengeTimer) {
+                clearInterval(activeChallengeTimer);
+                activeChallengeTimer = null;
+            }
+            stopTickingClock();
+        }
+
+        function startTickingClock(topicId) {
+            stopTickingClock();
+            activeChallengeTickTimer = setInterval(() => {
+                const topic = topics[activeTopicIndex];
+                if (!topic || topic.id !== topicId) return;
+                const challenge = getChallengeState(topic.id);
+                if (!challenge.isRunning) {
+                    stopTickingClock();
+                    return;
+                }
+                const currentSecond = getRemainingSeconds(topic.id);
+                if (currentSecond <= 0) {
+                    stopTickingClock();
+                    return;
+                }
+                playTickSound();
+            }, 1000);
+        }
+
+        function stopTickingClock() {
+            if (activeChallengeTickTimer) {
+                clearInterval(activeChallengeTickTimer);
+                activeChallengeTickTimer = null;
+            }
+        }
+
+        function initAudioIfNeeded() {
+            if (audioCtx) {
+                audioCtx.resume();
+                return;
+            }
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return;
+            audioCtx = new AudioContextClass();
+        }
+
+        function getTickNoiseBuffer() {
+            if (!audioCtx) return null;
+            if (tickNoiseBuffer) return tickNoiseBuffer;
+            const durationSec = 0.06;
+            const frameCount = Math.floor(audioCtx.sampleRate * durationSec);
+            const buffer = audioCtx.createBuffer(1, frameCount, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < frameCount; i++) {
+                data[i] = (Math.random() * 2 - 1) * 0.7;
+            }
+            tickNoiseBuffer = buffer;
+            return tickNoiseBuffer;
+        }
+
+        function playTickSound() {
+            if (!progressState.challenge || !progressState.challenge.soundEnabled || !audioCtx || audioCtx.state !== "running") return;
+            const noiseBuffer = getTickNoiseBuffer();
+            if (!noiseBuffer) return;
+
+            const now = audioCtx.currentTime;
+            const source = audioCtx.createBufferSource();
+            const bandpass = audioCtx.createBiquadFilter();
+            const lowpass = audioCtx.createBiquadFilter();
+            const gain = audioCtx.createGain();
+
+            source.buffer = noiseBuffer;
+            bandpass.type = "bandpass";
+            bandpass.frequency.setValueAtTime(1700, now);
+            bandpass.Q.setValueAtTime(0.8, now);
+            lowpass.type = "lowpass";
+            lowpass.frequency.setValueAtTime(2600, now);
+            lowpass.Q.setValueAtTime(0.7, now);
+
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(CHALLENGE_TICK_VOLUME, now + 0.004);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.04);
+
+            source.connect(bandpass);
+            bandpass.connect(lowpass);
+            lowpass.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            source.start(now);
+            source.stop(now + 0.05);
+        }
+
+        function playBeep({ frequency, duration, type = "sine", volume = 0.04, delay = 0 }) {
+            if (!progressState.challenge || !progressState.challenge.soundEnabled || !audioCtx) return;
+            const now = audioCtx.currentTime + delay;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(frequency, now);
+            gain.gain.setValueAtTime(volume, now);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(now);
+            osc.stop(now + duration);
+        }
+
+        function playSuccessSound() {
+            playBeep({ frequency: 740, duration: 0.08, type: "triangle", volume: 0.06 });
+            playBeep({ frequency: 988, duration: 0.12, type: "triangle", volume: 0.05, delay: 0.09 });
+        }
+
+        function playErrorSound() {
+            playBeep({ frequency: 220, duration: 0.08, type: "sawtooth", volume: 0.06 });
+            playBeep({ frequency: 170, duration: 0.12, type: "sawtooth", volume: 0.05, delay: 0.08 });
+        }
+
+        function completeChallenge(topicId, status) {
+            const topic = topics.find(t => t.id === topicId);
+            if (!topic) return;
+            const challenge = getChallengeState(topicId);
+            if (challenge.isCompleted && !challenge.isRunning) return;
+
+            const total = topic.tasks.length;
+            const solved = getTopicSolvedCount(topicId);
+            const endTime = Date.now();
+            const startTime = challenge.startedAt ? new Date(challenge.startedAt).getTime() : endTime;
+            const elapsedSeconds = Math.max(0, Math.min(CHALLENGE_DURATION_SECONDS, Math.ceil((endTime - startTime) / 1000)));
+
+            challenge.isRunning = false;
+            challenge.isCompleted = true;
+            challenge.locked = true;
+            challenge.endAt = null;
+            challenge.lastResult = {
+                status,
+                solved,
+                total,
+                timeSpentSeconds: elapsedSeconds,
+                finishedAt: new Date().toISOString()
+            };
+
+            if (status === "success") {
+                if (challenge.bestTimeSeconds === null || elapsedSeconds < challenge.bestTimeSeconds) {
+                    challenge.bestTimeSeconds = elapsedSeconds;
+                }
+                confetti({
+                    particleCount: 140,
+                    spread: 90,
+                    origin: { y: 0.6 },
+                    colors: ['#a855f7', '#3b82f6', '#22c55e']
+                });
+            }
+
+            saveProgress();
+            if (topics[activeTopicIndex] && topics[activeTopicIndex].id === topicId) {
+                stopChallengeTimer();
+                renderContent();
+            }
+        }
+
+        function computeStats(state) {
+            let completedTasks = 0;
+            let correctCount = 0;
+            let attemptCount = 0;
+            const totalTasks = topics.reduce((sum, topic) => sum + topic.tasks.length, 0);
+
+            topics.forEach(topic => {
+                topic.tasks.forEach(task => {
+                    const taskState = state.topicTaskState[topic.id][task.id];
+                    attemptCount += Number(taskState.attempts || 0);
+                    if (taskState.correct) correctCount++;
+                    if (taskState.solved) completedTasks++;
+                });
+            });
+
+            const completedDays = studyPlan.filter((_, idx) => state.dayState[idx]).length;
+            const xp = (correctCount * 10) + (completedDays * 50);
+            const progressPercent = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+            return {
+                xp,
+                progressPercent,
+                completedTasks,
+                totalTasks,
+                correctCount,
+                attemptCount
+            };
+        }
+
+        function updateStats() {
+            const stats = computeStats(progressState);
+            progressState.stats = stats;
+
+            const completedDays = studyPlan.filter((_, idx) => progressState.dayState[idx]).length;
+            const xpEl = document.getElementById('xpDisplay');
+            const progressEl = document.getElementById('totalProgressDisplay');
+            const daysEl = document.getElementById('daysCompleted');
+            const completedTasksEl = document.getElementById('completedTasksDisplay');
+            const totalTasksEl = document.getElementById('totalTasksDisplay');
+            const correctCountEl = document.getElementById('correctCountDisplay');
+            const attemptCountEl = document.getElementById('attemptCountDisplay');
+
+            if (xpEl) xpEl.innerText = `${stats.xp} XP`;
+            if (progressEl) progressEl.innerText = `${stats.progressPercent}%`;
+            if (daysEl) daysEl.innerText = completedDays;
+            if (completedTasksEl) completedTasksEl.innerText = stats.completedTasks;
+            if (totalTasksEl) totalTasksEl.innerText = stats.totalTasks;
+            if (correctCountEl) correctCountEl.innerText = stats.correctCount;
+            if (attemptCountEl) attemptCountEl.innerText = stats.attemptCount;
+            renderTopicStats();
+        }
+
+        function computeTopicStats(topic, state) {
+            const total = topic.tasks.length;
+            let completed = 0;
+            let attempts = 0;
+            let correct = 0;
+
+            topic.tasks.forEach(task => {
+                const taskState = state.topicTaskState[topic.id][task.id];
+                attempts += Number(taskState.attempts || 0);
+                if (taskState.solved) completed++;
+                if (taskState.correct) correct++;
+            });
+
+            const completionPercent = total ? Math.round((completed / total) * 100) : 0;
+            const accuracyPercent = attempts ? Math.round((correct / attempts) * 100) : 0;
+
+            return { total, completed, attempts, correct, completionPercent, accuracyPercent };
+        }
+
+        function buildReportHtml(exportedAtIso) {
+            const exportedAt = new Date(exportedAtIso);
+            const stats = computeStats(progressState);
+            const topicRows = topics.map(topic => {
+                const t = computeTopicStats(topic, progressState);
+                return `
+                    <tr>
+                        <td>${topic.title}</td>
+                        <td>${t.completed} / ${t.total}</td>
+                        <td>${t.correct} / ${t.attempts}</td>
+                        <td>${t.attempts}</td>
+                        <td>${t.completionPercent}%</td>
+                        <td>${t.accuracyPercent}%</td>
+                    </tr>
+                `;
+            }).join('');
+
+            const chartBlocks = topics.map(topic => {
+                const t = computeTopicStats(topic, progressState);
+                return `
+                    <div class="chart-card">
+                        <h3>${topic.title}</h3>
+                        <div class="metric">Completion ${t.completed}/${t.total} (${t.completionPercent}%)</div>
+                        <div class="bar-track"><div class="bar-fill bar-completion" style="width:${t.completionPercent}%"></div></div>
+                        <div class="metric">Accuracy ${t.correct}/${t.attempts} (${t.accuracyPercent}%)</div>
+                        <div class="bar-track"><div class="bar-fill bar-accuracy" style="width:${t.accuracyPercent}%"></div></div>
+                    </div>
+                `;
+            }).join('');
+
+            return `<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Diana Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; color: #1f2937; margin: 24px; }
+        h1 { margin-bottom: 4px; }
+        .muted { color: #6b7280; font-size: 13px; margin-bottom: 16px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 18px; }
+        .card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; background: #f9fafb; }
+        .card strong { display: block; font-size: 20px; margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 13px; }
+        th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
+        th { background: #f3f4f6; }
+        .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .chart-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px; background: #fff; }
+        .chart-card h3 { margin: 0 0 8px 0; font-size: 15px; }
+        .metric { font-size: 12px; margin-bottom: 4px; color: #374151; }
+        .bar-track { width: 100%; height: 10px; background: #e5e7eb; border-radius: 999px; overflow: hidden; margin-bottom: 8px; }
+        .bar-fill { height: 100%; border-radius: 999px; }
+        .bar-completion { background: #4f46e5; }
+        .bar-accuracy { background: #16a34a; }
+    </style>
+</head>
+<body>
+    <h1>Учебный отчет Дианы</h1>
+    <div class="muted">Экспортировано: ${exportedAt.toLocaleString('ru-RU')}</div>
+    <div class="stats-grid">
+        <div class="card">Выполнено задач<strong>${stats.completedTasks} / ${stats.totalTasks}</strong></div>
+        <div class="card">Правильные ответы<strong>${stats.correctCount}</strong></div>
+        <div class="card">Всего попыток<strong>${stats.attemptCount}</strong></div>
+    </div>
+    <h2>Статистика по темам</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Тема</th>
+                <th>Completion</th>
+                <th>Accuracy</th>
+                <th>Attempts</th>
+                <th>Completion %</th>
+                <th>Accuracy %</th>
+            </tr>
+        </thead>
+        <tbody>${topicRows}</tbody>
+    </table>
+    <h2>Charts</h2>
+    <div class="charts">${chartBlocks}</div>
+</body>
+<\/html>`;
+        }
+
+        function renderTopicStats() {
+            const container = document.getElementById('topicStatsContainer');
+            if (!container || !progressState) return;
+
+            container.innerHTML = topics.map((topic, index) => {
+                const t = computeTopicStats(topic, progressState);
+                const chartColors = getTopicChartColors(topic.id);
+                return `
+                    <div class="bg-white rounded-2xl shadow-md p-5 border border-gray-100">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-gray-800">${topic.title}</h3>
+                            <span class="text-xs px-2 py-1 rounded ${chartColors.accentBg} ${chartColors.accentText}">${t.completed}/${t.total}</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-3 mb-4">
+                            <div class="${chartColors.accentBg} rounded-lg p-2">
+                                <p class="text-[10px] uppercase text-gray-400 font-bold">Completion</p>
+                                <p class="text-sm font-bold ${chartColors.accentText}">${t.completed}/${t.total}</p>
+                            </div>
+                            <div class="${chartColors.accentBg} rounded-lg p-2">
+                                <p class="text-[10px] uppercase text-gray-400 font-bold">Accuracy</p>
+                                <p class="text-sm font-bold ${chartColors.accentText}">${t.correct}/${t.attempts}</p>
+                            </div>
+                            <div class="${chartColors.accentBg} rounded-lg p-2">
+                                <p class="text-[10px] uppercase text-gray-400 font-bold">Attempts</p>
+                                <p class="text-sm font-bold ${chartColors.accentText}">${t.attempts}</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="h-44"><canvas id="topicCompletionChart-${index}"></canvas></div>
+                            <div class="h-44"><canvas id="topicAccuracyChart-${index}"></canvas></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (!window.Chart) return;
+
+            topics.forEach((topic, index) => {
+                const t = computeTopicStats(topic, progressState);
+                const chartColors = getTopicChartColors(topic.id);
+                const completionCanvasId = `topicCompletionChart-${index}`;
+                const accuracyCanvasId = `topicAccuracyChart-${index}`;
+
+                if (topicCharts[completionCanvasId]) topicCharts[completionCanvasId].destroy();
+                if (topicCharts[accuracyCanvasId]) topicCharts[accuracyCanvasId].destroy();
+
+                const completionCanvas = document.getElementById(completionCanvasId);
+                const accuracyCanvas = document.getElementById(accuracyCanvasId);
+                if (!completionCanvas || !accuracyCanvas) return;
+
+                topicCharts[completionCanvasId] = new Chart(completionCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Completed', 'Remaining'],
+                        datasets: [{
+                            data: [t.completed, Math.max(0, t.total - t.completed)],
+                            backgroundColor: [chartColors.soft, '#e5e7eb'],
+                            borderColor: [chartColors.solid, '#e5e7eb'],
+                            borderWidth: 1.5
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: '#4b5563' }
+                            },
+                            title: { display: true, text: 'Completion', color: chartColors.solid }
+                        }
+                    }
+                });
+
+                topicCharts[accuracyCanvasId] = new Chart(accuracyCanvas, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Correct', 'Attempts'],
+                        datasets: [{
+                            data: [t.correct, t.attempts],
+                            backgroundColor: [chartColors.solid, chartColors.soft],
+                            borderColor: [chartColors.solid, chartColors.solid],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            title: { display: true, text: 'Accuracy / Attempts', color: chartColors.solid }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { precision: 0, color: '#6b7280' },
+                                grid: { color: '#e5e7eb' }
+                            },
+                            x: {
+                                ticks: { color: '#6b7280' },
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        function downloadTextFile(filename, content, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        window.exportResults = () => {
+            const now = new Date();
+            const datePart = now.toISOString().slice(0, 10);
+            const stats = computeStats(progressState);
+            const payload = {
+                exportedAt: now.toISOString(),
+                appVersion: APP_VERSION,
+                stats,
+                topics: topics.map(topic => ({
+                    topicId: topic.id,
+                    title: topic.title,
+                    tasks: topic.tasks.map(task => ({
+                        taskId: task.id,
+                        type: task.type,
+                        prompt: task.prompt,
+                        state: getTaskState(topic.id, task.id)
+                    }))
+                })),
+                dayPlan: studyPlan.map((day, idx) => ({
+                    day: day.day,
+                    title: day.title,
+                    task: day.task,
+                    completed: Boolean(progressState.dayState[idx])
+                }))
+            };
+
+            downloadTextFile(
+                `diana-progress-${datePart}.json`,
+                JSON.stringify(payload, null, 2),
+                'application/json'
+            );
+        };
+
+        window.exportPdfReport = () => {
+            const reportHtml = buildReportHtml(new Date().toISOString());
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) return;
+            printWindow.document.open();
+            printWindow.document.write(reportHtml);
+            printWindow.document.close();
+            printWindow.onload = () => printWindow.print();
+        };
+
+        window.exportWordReport = () => {
+            const now = new Date();
+            const datePart = now.toISOString().slice(0, 10);
+            const reportHtml = buildReportHtml(now.toISOString());
+            downloadTextFile(
+                `diana-progress-report-${datePart}.doc`,
+                reportHtml,
+                'application/msword'
+            );
+        };
+
+        /* --- 4. RENDERING FUNCTIONS --- */
+        function renderTabs() {
+            const container = document.getElementById('topicTabs');
+            container.innerHTML = topics.map((topic, index) => {
+                const topicTaskCount = topic.tasks.length;
+                const completedCount = getTopicSolvedCount(topic.id);
+                const isComplete = completedCount === topicTaskCount;
+
+                return `
+                <button onclick="setActiveTopic(${index})" 
+                    class="w-full text-left px-5 py-4 flex items-center justify-between hover:bg-white transition-all group ${index === activeTopicIndex ? 'tab-active' : 'text-gray-500'}">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${index === activeTopicIndex ? 'bg-purple-100 text-purple-600 shadow-sm' : 'bg-gray-200 text-gray-400 group-hover:bg-gray-300'}">
+                            <i class="fas ${topic.icon} text-sm"></i>
+                        </div>
+                        <div>
+                            <span class="font-bold text-sm block">${topic.title}</span>
+                            <span class="text-xs opacity-60">${completedCount}/${topicTaskCount} пройдено</span>
+                        </div>
+                    </div>
+                    ${isComplete ? '<i class="fas fa-check-circle text-green-500"></i>' : ''}
+                </button>
+            `}).join('');
+        }
+
+        function renderTaskCard(topic, task, taskIndex, trainerDisabled) {
+            const taskState = getTaskState(topic.id, task.id);
+            const isSolved = taskState.solved;
+            const hasAttempts = taskState.attempts > 0;
+            const isLastCorrect = taskState.lastWasCorrect === true;
+            const cooldownLeftMs = isSolved ? 0 : getTaskCooldownLeftMs(topic.id, task.id);
+            const isCooldownActive = cooldownLeftMs > 0;
+            const isDisabled = trainerDisabled || isSolved || isCooldownActive;
+            const taskKey = `${topic.id}:${task.id}`;
+            const cardStateClass = isSolved
+                ? 'bg-green-50 border-green-200'
+                : (hasAttempts && !isLastCorrect ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100');
+
+            let taskBody = '';
+
+            if (task.type === "mc") {
+                taskBody = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        ${task.options.map((opt, optIdx) => {
+                            let btnClass = "bg-white border hover:border-purple-300 hover:bg-purple-50 text-gray-600 shadow-sm";
+                            let icon = "";
+                            if (isSolved) {
+                                if (optIdx === task.correct) {
+                                    btnClass = "bg-green-500 text-white border-green-600 shadow-md ring-2 ring-green-200";
+                                    icon = '<i class="fas fa-check ml-2"></i>';
+                                } else {
+                                    btnClass = "bg-gray-100 text-gray-400 opacity-50 border-transparent";
+                                }
+                            } else if (hasAttempts && taskState.lastAnswer === optIdx) {
+                                btnClass = "bg-red-400 text-white border-red-500 opacity-90";
+                                icon = '<i class="fas fa-times ml-2"></i>';
+                            }
+                            return `<button
+                                ${isDisabled ? 'disabled' : ''}
+                                onclick="handleTaskAnswer(${taskIndex}, ${optIdx})"
+                                class="px-5 py-3 rounded-xl font-medium text-left transition-all transform active:scale-95 disabled:opacity-60 ${btnClass} flex justify-between items-center">
+                                ${opt} ${icon}
+                            </button>`;
+                        }).join('')}
+                    </div>
+                `;
+            }
+
+            if (task.type === "fill") {
+                const inputId = `fill-${topic.id}-${task.id}`;
+                const currentValue = typeof taskState.lastAnswer === "string" ? taskState.lastAnswer : "";
+                taskBody = `
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input
+                            id="${inputId}"
+                            type="text"
+                            ${isDisabled ? 'disabled' : ''}
+                            value="${currentValue.replace(/"/g, '&quot;')}"
+                            placeholder="Введите ответ..."
+                            class="flex-1 px-4 py-3 rounded-xl border ${hasAttempts && !isLastCorrect && !isSolved ? 'border-red-300 focus:ring-red-200' : 'border-gray-200 focus:ring-purple-200'} focus:outline-none focus:ring-2 ${isSolved ? 'bg-green-100 text-green-800' : 'bg-white'}"
+                        />
+                        <button
+                            ${isDisabled ? 'disabled' : ''}
+                            onclick="submitFillTask(${taskIndex})"
+                            class="px-5 py-3 rounded-xl font-medium bg-indigo-500 text-white hover:bg-indigo-600 transition-all disabled:opacity-60">
+                            Проверить
+                        </button>
+                    </div>
+                `;
+            }
+
+            if (task.type === "tf") {
+                const selectedWrong = !isSolved && hasAttempts && !isLastCorrect ? taskState.lastAnswer : null;
+                const trueBtnClass = selectedWrong === true
+                    ? "bg-red-400 text-white border-red-500 opacity-90"
+                    : (isSolved && task.correct ? "bg-green-500 text-white border-green-600 shadow-md" : "bg-white border hover:border-purple-300 hover:bg-purple-50 text-gray-600 shadow-sm");
+                const falseBtnClass = selectedWrong === false
+                    ? "bg-red-400 text-white border-red-500 opacity-90"
+                    : (isSolved && !task.correct ? "bg-green-500 text-white border-green-600 shadow-md" : "bg-white border hover:border-purple-300 hover:bg-purple-50 text-gray-600 shadow-sm");
+                taskBody = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                            ${isDisabled ? 'disabled' : ''}
+                            onclick="handleTaskAnswer(${taskIndex}, true)"
+                            class="px-5 py-3 rounded-xl font-medium text-left transition-all disabled:opacity-60 ${trueBtnClass}">
+                            Верно
+                        </button>
+                        <button
+                            ${isDisabled ? 'disabled' : ''}
+                            onclick="handleTaskAnswer(${taskIndex}, false)"
+                            class="px-5 py-3 rounded-xl font-medium text-left transition-all disabled:opacity-60 ${falseBtnClass}">
+                            Неверно
+                        </button>
+                    </div>
+                `;
+            }
+
+            return `
+                <div id="task-${topic.id}-${taskIndex}" data-task-index="${taskIndex}" class="mb-6 p-5 border rounded-2xl ${cardStateClass} transition-colors duration-300 ${uiState.shakeTaskKey === taskKey ? 'challenge-shake' : ''}">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-500 bg-white px-2 py-1 rounded">Task ${taskIndex + 1}/${topic.tasks.length}</span>
+                        <span class="text-xs text-gray-400">Попытки: ${taskState.attempts}</span>
+                    </div>
+                    <p class="font-bold text-gray-800 mb-4 text-lg flex gap-2">
+                        <span class="bg-white w-8 h-8 flex items-center justify-center rounded-full shadow-sm text-sm border">${taskIndex + 1}</span>
+                        ${task.prompt}
+                    </p>
+                    ${taskBody}
+                    ${taskState.challengeWrong ? `
+                        <div class="mt-2 text-xs font-bold text-red-600">Wrong, try again</div>
+                    ` : ''}
+                    ${isCooldownActive ? `
+                        <div class="mt-2 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            Подожди ${Math.max(1, Math.ceil(cooldownLeftMs / 1000))} сек и попробуй снова
+                        </div>
+                    ` : ''}
+                    ${hasAttempts ? `
+                        <div class="mt-4 p-3 rounded-lg text-sm ${isLastCorrect ? 'text-green-800 bg-green-100/50' : 'text-red-800 bg-red-100/50'} fade-in flex items-start gap-2">
+                            <i class="fas ${isLastCorrect ? 'fa-check-circle' : 'fa-info-circle'} mt-1"></i>
+                            <div>
+                                <span class="font-bold">${isLastCorrect ? 'Отлично!' : 'Пока неверно.'}</span> ${task.explanation}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderContent() {
+            const topic = topics[activeTopicIndex];
+            const container = document.getElementById('contentDisplay');
+            syncChallengeState(topic.id);
+            const challenge = getChallengeState(topic.id);
+            const palette = getTopicPalette(topic.id);
+            const completedCount = getTopicSolvedCount(topic.id);
+            const isTrainerUnlocked = !challenge.locked && challenge.isRunning;
+            const tasksHTML = topic.tasks.map((task, taskIdx) => renderTaskCard(topic, task, taskIdx, !isTrainerUnlocked)).join('');
+            const totalTasks = topic.tasks.length;
+            const solvedCount = getTopicSolvedCount(topic.id);
+            const progressPercent = totalTasks ? Math.round((solvedCount / totalTasks) * 100) : 0;
+            const bestTimeHtml = challenge.bestTimeSeconds !== null
+                ? `<p class="text-xs text-gray-500 mt-1">Best time: <span class="font-bold text-emerald-600">${formatTime(challenge.bestTimeSeconds)}</span></p>`
+                : '';
+            let resultSummaryHtml = '';
+            if (challenge.lastResult && !challenge.isRunning) {
+                if (challenge.lastResult.status === "success") {
+                    resultSummaryHtml = `
+                        <div class="mt-3 text-sm bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg px-3 py-2">
+                            Success: ${challenge.lastResult.solved}/${challenge.lastResult.total} in ${formatTime(challenge.lastResult.timeSpentSeconds)}.
+                        </div>
+                    `;
+                } else if (challenge.lastResult.status === "timeout") {
+                    resultSummaryHtml = `
+                        <div class="mt-3 text-sm bg-red-50 border border-red-200 text-red-700 rounded-lg px-3 py-2">
+                            Time is up. Solved ${challenge.lastResult.solved}/${challenge.lastResult.total}.
+                        </div>
+                    `;
+                }
+            }
+
+            container.innerHTML = `
+                <div class="flex items-center gap-4 mb-8 pb-6 border-b border-gray-100">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-purple-200">
+                        <i class="fas ${topic.icon}"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-extrabold text-gray-800 tracking-tight">${topic.title}</h2>
+                        <p class="text-gray-500 font-medium">${topic.summary}</p>
+                        <p class="text-xs mt-1 text-gray-400">Прогресс: ${completedCount}/${topic.tasks.length} задач</p>
+                    </div>
+                </div>
+
+                <div class="prose max-w-none text-gray-600 mb-10">
+                    ${topic.theory}
+                </div>
+
+                <div class="mb-8 border rounded-xl p-4 ${palette.frame}">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-bold ${palette.frameTitle}">Challenge Mode</p>
+                            <p class="text-xs ${palette.frameSubtle}">Goal: solve all tasks (${totalTasks}) in 2:00.</p>
+                            ${bestTimeHtml}
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <button onclick="toggleChallengeSound()" class="text-xs px-3 py-2 rounded-lg border bg-white ${palette.controlBtn}">
+                                Sound: ${progressState.challenge.soundEnabled ? 'On' : 'Off'}
+                            </button>
+                            <button onclick="resetChallengeTopic()" class="text-xs px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100">
+                                Reset challenge
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                        <div class="bg-white rounded-lg border border-gray-100 px-3 py-2">
+                            <p class="text-gray-500 text-xs">Time left</p>
+                            <p class="font-bold text-gray-800">Time left: <span id="challengeTimeLeft">${formatTime(challenge.isRunning ? getRemainingSeconds(topic.id) : (challenge.lastResult && challenge.lastResult.status === "timeout" ? 0 : CHALLENGE_DURATION_SECONDS))}</span></p>
+                        </div>
+                        <div class="bg-white rounded-lg border border-gray-100 px-3 py-2">
+                            <p class="text-gray-500 text-xs">Solved</p>
+                            <p class="font-bold text-gray-800">Solved <span id="challengeSolvedCount">${solvedCount}/${totalTasks}</span></p>
+                        </div>
+                        <div class="bg-white rounded-lg border border-gray-100 px-3 py-2">
+                            <p class="text-gray-500 text-xs">Status</p>
+                            <p id="challengeStatusText" class="font-bold text-gray-800">${challenge.isRunning ? 'Challenge is running' : (challenge.lastResult ? (challenge.lastResult.status === "success" ? `Success in ${formatTime(challenge.lastResult.timeSpentSeconds)}` : 'Time is up') : 'Locked')}</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 h-2 bg-white rounded-full overflow-hidden border border-gray-100">
+                        <div id="challengeProgressBar" class="h-full ${palette.progressBar} transition-all" style="width:${progressPercent}%"></div>
+                    </div>
+                    ${resultSummaryHtml}
+                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                        <button onclick="startTopicChallenge()" class="px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${palette.startBtn}">
+                            I’ve read the rule — Start 2:00 challenge
+                        </button>
+                        ${challenge.lastResult && !challenge.isRunning ? `
+                            <button onclick="resetChallengeTopic()" class="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 font-semibold text-sm">
+                                Try again
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <div class="bg-white">
+                    <h3 class="text-xl font-bold mb-6 flex items-center gap-2 text-gray-700">
+                        <span class="bg-indigo-100 text-indigo-600 w-8 h-8 rounded-lg flex items-center justify-center text-sm"><i class="fas fa-dumbbell"></i></span>
+                        Тренажер
+                    </h3>
+                    <div class="relative">
+                        ${tasksHTML}
+                        ${!isTrainerUnlocked ? `
+                            <div class="trainer-overlay ${palette.frameSubtle}">
+                                <div class="border rounded-xl px-4 py-3 shadow-sm ${palette.lockCard}">
+                                    <p class="text-sm font-bold ${palette.frameTitle}">Trainer is locked</p>
+                                    <p class="text-xs mt-1">Read the rule and start the 2:00 challenge to unlock tasks.</p>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+                ${challenge.isRunning ? `
+                    <div id="floatingChallengeTimer" class="floating-timer-hud rounded-xl border px-4 py-3 ${palette.floating}">
+                        <div class="flex items-center justify-between gap-4">
+                            <div>
+                                <p class="text-[11px] uppercase tracking-wider font-extrabold opacity-80">Challenge Timer</p>
+                                <p class="text-lg font-black leading-tight" id="floatingChallengeTimeLeft">${formatTime(getRemainingSeconds(topic.id))}</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-[11px] uppercase tracking-wider font-extrabold opacity-80">Solved</p>
+                                <p class="text-base font-extrabold"><span id="floatingChallengeSolvedCount">${solvedCount}/${totalTasks}</span></p>
+                            </div>
+                        </div>
+                        <p id="floatingChallengeStatusText" class="text-xs font-semibold mt-2 opacity-90">Challenge is running</p>
+                        <div class="mt-2">
+                            <button onclick="toggleChallengeSound()" class="text-xs px-2 py-1 rounded-md border bg-white/70 ${palette.controlBtn}">
+                                ${progressState.challenge.soundEnabled ? '🔊 Звук' : '🔇 Без звука'}
+                            </button>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+
+            container.classList.remove('fade-in');
+            void container.offsetWidth;
+            container.classList.add('fade-in');
+            if (challenge.isRunning) {
+                startChallengeTimer(topic.id);
+            } else {
+                stopChallengeTimer();
+            }
+            renderChallengeHud();
+        }
+
+        function renderTimeline() {
+            const container = document.getElementById('planTimeline');
+            container.innerHTML = studyPlan.map((day, idx) => {
+                const isDone = progressState.dayState[idx] === true;
+                return `
+                <div onclick="toggleDay(${idx})" 
+                    class="day-card min-w-[220px] md:min-w-[240px] bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-lg relative overflow-hidden group ${isDone ? 'completed' : ''}">
+
+                    <div class="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-gray-100 to-transparent rounded-bl-full -mr-8 -mt-8 transition-colors group-hover:from-purple-100"></div>
+
+                    <div class="flex justify-between items-center mb-3 relative z-10">
+                        <span class="font-bold ${isDone ? 'text-green-600' : 'text-gray-400'} text-xs uppercase tracking-wider bg-gray-50 px-2 py-1 rounded">День ${day.day}</span>
+                        <div class="check-icon w-6 h-6 rounded-full border-2 border-gray-200 flex items-center justify-center transition-all">
+                            <i class="fas fa-check text-xs ${isDone ? '' : 'opacity-0'}"></i>
+                        </div>
+                    </div>
+
+                    <h4 class="font-bold text-gray-800 mb-2 leading-tight relative z-10">${day.title}</h4>
+                    <p class="text-xs text-gray-500 leading-relaxed relative z-10">${day.task}</p>
+
+                    ${isDone ? '<div class="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none"><i class="fas fa-check-circle text-6xl text-green-500"></i></div>' : ''}
+                </div>
+            `}).join('');
+        }
+
+        /* --- 5. INTERACTION LOGIC --- */
+        function isTaskAnswerCorrect(task, userAnswer) {
+            if (task.type === "mc") return Number(userAnswer) === task.correct;
+            if (task.type === "tf") return Boolean(userAnswer) === Boolean(task.correct);
+            if (task.type === "fill") {
+                const normalizedAnswer = normalizeAnswer(userAnswer);
+                const accepted = (task.acceptedAnswers || [task.correct]).map(normalizeAnswer);
+                return accepted.includes(normalizedAnswer);
+            }
+            return false;
+        }
+
+        window.setActiveTopic = (index) => {
+            activeTopicIndex = index;
+            renderTabs();
+            renderContent();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.handleTaskAnswer = (taskIndex, userAnswer) => {
+            const topic = topics[activeTopicIndex];
+            syncChallengeState(topic.id);
+            const challenge = getChallengeState(topic.id);
+            if (challenge.locked || !challenge.isRunning) return;
+            const task = topic.tasks[taskIndex];
+            const taskState = getTaskState(topic.id, task.id);
+            if (getTaskCooldownLeftMs(topic.id, task.id) > 0) return;
+            const isCorrect = isTaskAnswerCorrect(task, userAnswer);
+            const taskKey = `${topic.id}:${task.id}`;
+
+            taskState.attempts += 1;
+            taskState.lastAnswer = userAnswer;
+            taskState.lastWasCorrect = isCorrect;
+            taskState.lastUpdated = new Date().toISOString();
+            taskState.challengeWrong = !isCorrect;
+            if (isCorrect) {
+                taskState.correct = true;
+                taskState.solved = true;
+                delete uiState.cooldownUntilByTaskKey[taskKey];
+            } else {
+                startTaskCooldown(topic.id, task.id);
+            }
+
+            saveProgress();
+            renderTabs();
+
+            if (isCorrect) {
+                playSuccessSound();
+                confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#a855f7', '#3b82f6', '#22c55e']
+                });
+                if (getTopicSolvedCount(topic.id) === topic.tasks.length) {
+                    completeChallenge(topic.id, "success");
+                    stopChallengeTimer();
+                }
+                renderContent();
+                setTimeout(() => {
+                    if (topics[activeTopicIndex] && topics[activeTopicIndex].id === topic.id) {
+                        scrollToNextTask(topic.id, taskIndex);
+                    }
+                }, 90);
+            } else {
+                playErrorSound();
+                uiState.shakeTaskKey = taskKey;
+                renderContent();
+                setTimeout(() => {
+                    if (uiState.shakeTaskKey === taskKey) {
+                        uiState.shakeTaskKey = null;
+                        if (topics[activeTopicIndex] && topics[activeTopicIndex].id === topic.id) {
+                            renderContent();
+                        }
+                    }
+                }, 400);
+            }
+        };
+
+        window.submitFillTask = (taskIndex) => {
+            const topic = topics[activeTopicIndex];
+            syncChallengeState(topic.id);
+            const challenge = getChallengeState(topic.id);
+            if (challenge.locked || !challenge.isRunning) return;
+            const task = topic.tasks[taskIndex];
+            const input = document.getElementById(`fill-${topic.id}-${task.id}`);
+            if (!input) return;
+            const value = input.value;
+            if (!String(value).trim()) return;
+            window.handleTaskAnswer(taskIndex, value);
+        };
+
+        window.startTopicChallenge = () => {
+            const topic = topics[activeTopicIndex];
+            const challenge = getChallengeState(topic.id);
+            initAudioIfNeeded();
+            challenge.locked = false;
+            challenge.isRunning = true;
+            challenge.isCompleted = false;
+            challenge.startedAt = new Date().toISOString();
+            challenge.endAt = new Date(Date.now() + CHALLENGE_DURATION_SECONDS * 1000).toISOString();
+            challenge.lastResult = null;
+            saveProgress();
+            renderContent();
+            if (getTopicSolvedCount(topic.id) === topic.tasks.length) {
+                completeChallenge(topic.id, "success");
+            }
+        };
+
+        window.resetChallengeTopic = () => {
+            const topic = topics[activeTopicIndex];
+            const challenge = getChallengeState(topic.id);
+            console.log(`[reset] Topic reset started: ${topic.id}`);
+            challenge.locked = true;
+            challenge.isRunning = false;
+            challenge.isCompleted = false;
+            challenge.startedAt = null;
+            challenge.endAt = null;
+            challenge.lastResult = null;
+            topic.tasks.forEach(task => {
+                progressState.topicTaskState[topic.id][task.id] = createDefaultTaskState();
+            });
+            stopChallengeTimer();
+            saveProgress();
+            renderContent();
+            console.log(`[reset] Topic reset completed: ${topic.id}`);
+        };
+
+        window.toggleChallengeSound = () => {
+            progressState.challenge.soundEnabled = !progressState.challenge.soundEnabled;
+            saveProgress();
+            renderContent();
+        };
+
+        window.toggleDay = (index) => {
+            progressState.dayState[index] = !progressState.dayState[index];
+            saveProgress();
+            renderTimeline();
+
+            if (progressState.dayState[index]) {
+                confetti({
+                    particleCount: 50,
+                    spread: 50,
+                    origin: { y: 0.8 },
+                    colors: ['#facc15', '#22c55e']
+                });
+            }
+        };
+
+        window.onload = () => {
+            loadProgress();
+            renderTabs();
+            renderContent();
+            renderTimeline();
+        };
+    </script>
+</body>
+</html>
