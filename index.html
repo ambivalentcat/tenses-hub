@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Учебный Хаб Дианы 2.0</title>
+    <title>Учебный Хаб Кирилла 2.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -76,7 +76,7 @@
                 <div class="flex items-center gap-3 mb-2">
                     <span class="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded uppercase tracking-wide">Student Dashboard</span>
                 </div>
-                <h1 class="text-3xl md:text-5xl font-extrabold mb-2 tracking-tight">Привет, Диана! 👋</h1>
+                <h1 class="text-3xl md:text-5xl font-extrabold mb-2 tracking-tight">Привет, Кирилл! 👋</h1>
                 <p class="text-blue-100 text-lg font-medium">Давай покорим английскую грамматику!</p>
             </div>
             
@@ -227,204 +227,819 @@
     <!-- Footer -->
     <footer class="bg-gray-800 text-white py-10 text-center mt-10 border-t border-gray-700">
         <p class="font-bold text-lg mb-2">Never Give Up! 🚀</p>
-        <p class="opacity-60 text-sm">Создано специально для Дианы</p>
+        <p class="opacity-60 text-sm">Создано специально для Кирилла</p>
     </footer>
 
     <!-- Logic -->
     <script>
         /* --- 1. DATA --- */
         const APP_VERSION = "2.2";
-        const STORAGE_KEY_V2 = "diana_progress_v2";
-        const LEGACY_QUIZ_KEY = "diana_quiz_state";
-        const LEGACY_DAY_KEY = "diana_day_state";
-        const CHALLENGE_DURATION_SECONDS = 120;
+        const STORAGE_KEY_V2 = "kirill_progress_v2";
+        const LEGACY_QUIZ_KEY = "kirill_quiz_state";
+        const LEGACY_DAY_KEY = "kirill_day_state";
+        const OLD_STORAGE_KEY_V2 = "diana_progress_v2";
+        const OLD_LEGACY_QUIZ_KEY = "diana_quiz_state";
+        const OLD_LEGACY_DAY_KEY = "diana_day_state";
+        const CHALLENGE_TOTAL_SECONDS = 240;
 
         const topics = [
             {
-                id: 'possessive',
-                title: "Притяжательный падеж ('s)",
-                icon: "fa-key",
-                summary: "Чей? Кого? Если можно вставить 'чей', ставим 's.",
+                id: 'time_markers',
+                title: "Time Markers (Маркеры времени)",
+                icon: "fa-tags",
+                summary: "Распознавание времени по маркерам и контексту, включая неоднозначные случаи.",
+                theory: `
+                    <div class="bg-sky-50 p-5 rounded-xl mb-6 text-sky-900 border-l-4 border-sky-500 shadow-sm">
+                        <h4 class="font-bold mb-2">Кратко</h4>
+                        <p class="text-sm mb-2">Маркеры времени помогают выбрать время, но некоторые слова работают только в контексте.</p>
+                        <div class="bg-white border border-sky-200 rounded-lg p-3 text-sm mb-2">
+                            <strong>Как использовать:</strong> сначала смотри на маркер, затем проверяй контекст (finished vs so far, background vs interrupting action).
+                        </div>
+                        <p class="text-sm mb-2"><strong>Time markers:</strong></p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 border border-sky-200">every day — каждый день</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 border border-sky-200">right now — прямо сейчас</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 border border-sky-200">yesterday — вчера</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 border border-sky-200">at 5 pm yesterday — вчера в 5 вечера</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 border border-sky-200">tomorrow — завтра</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-sky-100 text-sky-800 border border-sky-200">already — уже</span>
+                        </div>
+                    </div>
+                `,
+                tasks: [
+                    {
+                        id: "tm_match_tr_1",
+                        type: "match",
+                        prompt: "Сопоставь English marker с русским переводом (микс времен).",
+                        leftLabel: "English marker",
+                        rightLabel: "Русский перевод",
+                        leftItems: [
+                            { key: "tr1_every_day", text: "every day" },
+                            { key: "tr1_right_now", text: "right now" },
+                            { key: "tr1_yesterday", text: "yesterday" },
+                            { key: "tr1_tomorrow", text: "tomorrow" },
+                            { key: "tr1_already", text: "already" },
+                            { key: "tr1_while", text: "while" }
+                        ],
+                        rightItems: [
+                            { key: "tr1_already_ru", text: "уже" },
+                            { key: "tr1_while_ru", text: "в то время как" },
+                            { key: "tr1_every_day_ru", text: "каждый день" },
+                            { key: "tr1_right_now_ru", text: "прямо сейчас" },
+                            { key: "tr1_tomorrow_ru", text: "завтра" },
+                            { key: "tr1_yesterday_ru", text: "вчера" }
+                        ],
+                        correct: {
+                            tr1_every_day: "tr1_every_day_ru",
+                            tr1_right_now: "tr1_right_now_ru",
+                            tr1_yesterday: "tr1_yesterday_ru",
+                            tr1_tomorrow: "tr1_tomorrow_ru",
+                            tr1_already: "tr1_already_ru",
+                            tr1_while: "tr1_while_ru"
+                        },
+                        explanation: "Маркерные слова из разных времен в одном задании."
+                    },
+                    {
+                        id: "tm_match_tr_2",
+                        type: "match",
+                        prompt: "Сопоставь English marker с русским переводом (микс времен).",
+                        leftLabel: "English marker",
+                        rightLabel: "Русский перевод",
+                        leftItems: [
+                            { key: "tr2_on_fridays", text: "on Fridays" },
+                            { key: "tr2_at_the_moment", text: "at the moment" },
+                            { key: "tr2_last_month", text: "last month" },
+                            { key: "tr2_at_that_moment", text: "at that moment" },
+                            { key: "tr2_soon", text: "soon" },
+                            { key: "tr2_yet", text: "yet" }
+                        ],
+                        rightItems: [
+                            { key: "tr2_at_that_moment_ru", text: "в тот момент" },
+                            { key: "tr2_yet_ru", text: "еще (вопрос/отриц.)" },
+                            { key: "tr2_at_the_moment_ru", text: "в данный момент" },
+                            { key: "tr2_last_month_ru", text: "в прошлом месяце" },
+                            { key: "tr2_soon_ru", text: "скоро" },
+                            { key: "tr2_on_fridays_ru", text: "по пятницам" }
+                        ],
+                        correct: {
+                            tr2_on_fridays: "tr2_on_fridays_ru",
+                            tr2_at_the_moment: "tr2_at_the_moment_ru",
+                            tr2_last_month: "tr2_last_month_ru",
+                            tr2_at_that_moment: "tr2_at_that_moment_ru",
+                            tr2_soon: "tr2_soon_ru",
+                            tr2_yet: "tr2_yet_ru"
+                        },
+                        explanation: "Переводы уникальны, маркеры перемешаны по временам."
+                    },
+                    {
+                        id: "tm_match_tr_3",
+                        type: "match",
+                        prompt: "Сопоставь English marker с русским переводом (микс времен).",
+                        leftLabel: "English marker",
+                        rightLabel: "Русский перевод",
+                        leftItems: [
+                            { key: "tr3_usually", text: "usually" },
+                            { key: "tr3_currently", text: "currently" },
+                            { key: "tr3_two_hours_ago", text: "two hours ago" },
+                            { key: "tr3_from_3_to_5", text: "from 3 to 5" },
+                            { key: "tr3_i_think", text: "I think" },
+                            { key: "tr3_ever", text: "ever" }
+                        ],
+                        rightItems: [
+                            { key: "tr3_two_hours_ago_ru", text: "два часа назад" },
+                            { key: "tr3_ever_ru", text: "когда-либо" },
+                            { key: "tr3_usually_ru", text: "обычно" },
+                            { key: "tr3_i_think_ru", text: "я думаю" },
+                            { key: "tr3_currently_ru", text: "в настоящее время" },
+                            { key: "tr3_from_3_to_5_ru", text: "с 3 до 5" }
+                        ],
+                        correct: {
+                            tr3_usually: "tr3_usually_ru",
+                            tr3_currently: "tr3_currently_ru",
+                            tr3_two_hours_ago: "tr3_two_hours_ago_ru",
+                            tr3_from_3_to_5: "tr3_from_3_to_5_ru",
+                            tr3_i_think: "tr3_i_think_ru",
+                            tr3_ever: "tr3_ever_ru"
+                        },
+                        explanation: "В каждом наборе есть маркеры из нескольких времен."
+                    },
+                    {
+                        id: "tm_match_tr_4",
+                        type: "match",
+                        prompt: "Сопоставь English marker с русским переводом (микс времен).",
+                        leftLabel: "English marker",
+                        rightLabel: "Русский перевод",
+                        leftItems: [
+                            { key: "tr4_every_weekend", text: "every weekend" },
+                            { key: "tr4_now", text: "now" },
+                            { key: "tr4_in_2020", text: "in 2020" },
+                            { key: "tr4_all_night", text: "all night" },
+                            { key: "tr4_next_week", text: "next week" },
+                            { key: "tr4_just", text: "just" }
+                        ],
+                        rightItems: [
+                            { key: "tr4_now_ru", text: "сейчас" },
+                            { key: "tr4_next_week_ru", text: "на следующей неделе" },
+                            { key: "tr4_in_2020_ru", text: "в 2020 году" },
+                            { key: "tr4_all_night_ru", text: "всю ночь" },
+                            { key: "tr4_every_weekend_ru", text: "каждые выходные" },
+                            { key: "tr4_just_ru", text: "только что" }
+                        ],
+                        correct: {
+                            tr4_every_weekend: "tr4_every_weekend_ru",
+                            tr4_now: "tr4_now_ru",
+                            tr4_in_2020: "tr4_in_2020_ru",
+                            tr4_all_night: "tr4_all_night_ru",
+                            tr4_next_week: "tr4_next_week_ru",
+                            tr4_just: "tr4_just_ru"
+                        },
+                        explanation: "Задание на распознавание маркеров без опоры на один шаблон."
+                    },
+                    {
+                        id: "tm_match_tense_1",
+                        type: "match",
+                        prompt: "Сопоставь маркер и время (каждая пара = разное время).",
+                        leftLabel: "Marker",
+                        rightLabel: "Tense",
+                        leftItems: [
+                            { key: "t1_every_day", text: "every day" },
+                            { key: "t1_right_now", text: "right now" },
+                            { key: "t1_yesterday", text: "yesterday" },
+                            { key: "t1_at_5_pm_yesterday", text: "at 5 pm yesterday" },
+                            { key: "t1_tomorrow", text: "tomorrow" },
+                            { key: "t1_already", text: "already" }
+                        ],
+                        rightItems: [
+                            { key: "t1_ps", text: "Present Simple" },
+                            { key: "t1_pc", text: "Present Continuous" },
+                            { key: "t1_past", text: "Past Simple" },
+                            { key: "t1_past_cont", text: "Past Continuous" },
+                            { key: "t1_future", text: "Future Simple / will" },
+                            { key: "t1_pp", text: "Present Perfect" }
+                        ],
+                        correct: {
+                            t1_every_day: "t1_ps",
+                            t1_right_now: "t1_pc",
+                            t1_yesterday: "t1_past",
+                            t1_at_5_pm_yesterday: "t1_past_cont",
+                            t1_tomorrow: "t1_future",
+                            t1_already: "t1_pp"
+                        },
+                        explanation: "Все 6 времен смешаны, справа нет дубликатов."
+                    },
+                    {
+                        id: "tm_match_tense_2",
+                        type: "match",
+                        prompt: "Сопоставь маркер и время (каждая пара = разное время).",
+                        leftLabel: "Marker",
+                        rightLabel: "Tense",
+                        leftItems: [
+                            { key: "t2_on_mondays", text: "on Mondays" },
+                            { key: "t2_at_the_moment", text: "at the moment" },
+                            { key: "t2_two_days_ago", text: "two days ago" },
+                            { key: "t2_while", text: "while" },
+                            { key: "t2_next_week", text: "next week" },
+                            { key: "t2_just", text: "just" }
+                        ],
+                        rightItems: [
+                            { key: "t2_ps", text: "Present Simple" },
+                            { key: "t2_pc", text: "Present Continuous" },
+                            { key: "t2_past", text: "Past Simple" },
+                            { key: "t2_past_cont", text: "Past Continuous" },
+                            { key: "t2_future", text: "Future Simple / will" },
+                            { key: "t2_pp", text: "Present Perfect" }
+                        ],
+                        correct: {
+                            t2_on_mondays: "t2_ps",
+                            t2_at_the_moment: "t2_pc",
+                            t2_two_days_ago: "t2_past",
+                            t2_while: "t2_past_cont",
+                            t2_next_week: "t2_future",
+                            t2_just: "t2_pp"
+                        },
+                        explanation: "Нужно различать похожие по смыслу, но разные по времени маркеры."
+                    },
+                    {
+                        id: "tm_match_tense_3",
+                        type: "match",
+                        prompt: "Сопоставь маркер и время (каждая пара = разное время).",
+                        leftLabel: "Marker",
+                        rightLabel: "Tense",
+                        leftItems: [
+                            { key: "t3_often", text: "often" },
+                            { key: "t3_now", text: "now" },
+                            { key: "t3_last_year", text: "last year" },
+                            { key: "t3_all_night", text: "all night" },
+                            { key: "t3_soon", text: "soon" },
+                            { key: "t3_ever", text: "ever" }
+                        ],
+                        rightItems: [
+                            { key: "t3_ps", text: "Present Simple" },
+                            { key: "t3_pc", text: "Present Continuous" },
+                            { key: "t3_past", text: "Past Simple" },
+                            { key: "t3_past_cont", text: "Past Continuous" },
+                            { key: "t3_future", text: "Future Simple / will" },
+                            { key: "t3_pp", text: "Present Perfect" }
+                        ],
+                        correct: {
+                            t3_often: "t3_ps",
+                            t3_now: "t3_pc",
+                            t3_last_year: "t3_past",
+                            t3_all_night: "t3_past_cont",
+                            t3_soon: "t3_future",
+                            t3_ever: "t3_pp"
+                        },
+                        explanation: "Маркеры разных групп смешаны как естественные дистракторы."
+                    },
+                    {
+                        id: "tm_match_tense_4",
+                        type: "match",
+                        prompt: "Сопоставь маркер и время (каждая пара = разное время).",
+                        leftLabel: "Marker",
+                        rightLabel: "Tense",
+                        leftItems: [
+                            { key: "t4_every_weekend", text: "every weekend" },
+                            { key: "t4_currently", text: "currently" },
+                            { key: "t4_in_2019", text: "in 2019" },
+                            { key: "t4_from_3_to_5_yesterday", text: "from 3 to 5 yesterday" },
+                            { key: "t4_i_think", text: "I think" },
+                            { key: "t4_yet", text: "yet" }
+                        ],
+                        rightItems: [
+                            { key: "t4_ps", text: "Present Simple" },
+                            { key: "t4_pc", text: "Present Continuous" },
+                            { key: "t4_past", text: "Past Simple" },
+                            { key: "t4_past_cont", text: "Past Continuous" },
+                            { key: "t4_future", text: "Future Simple / will" },
+                            { key: "t4_pp", text: "Present Perfect" }
+                        ],
+                        correct: {
+                            t4_every_weekend: "t4_ps",
+                            t4_currently: "t4_pc",
+                            t4_in_2019: "t4_past",
+                            t4_from_3_to_5_yesterday: "t4_past_cont",
+                            t4_i_think: "t4_future",
+                            t4_yet: "t4_pp"
+                        },
+                        explanation: "Каждому маркеру соответствует уникальное время."
+                    },
+                    {
+                        id: "tm_match_ctx_1",
+                        type: "match",
+                        prompt: "Сопоставь контекст и время (today/these days/nowadays).",
+                        leftLabel: "Context snippet",
+                        rightLabel: "Tense",
+                        leftItems: [
+                            { key: "c1_today_so_far", text: "I have done three tasks today so far." },
+                            { key: "c1_today_9am", text: "I did this task today at 9 AM." },
+                            { key: "c1_these_days", text: "I'm working late these days." },
+                            { key: "c1_nowadays", text: "People use smartphones nowadays." },
+                            { key: "c1_at_that_moment", text: "At that moment, we were waiting for the bus." },
+                            { key: "c1_tomorrow", text: "I will send the report tomorrow." }
+                        ],
+                        rightItems: [
+                            { key: "c1_ps", text: "Present Simple" },
+                            { key: "c1_pc", text: "Present Continuous" },
+                            { key: "c1_past", text: "Past Simple" },
+                            { key: "c1_past_cont", text: "Past Continuous" },
+                            { key: "c1_future", text: "Future Simple / will" },
+                            { key: "c1_pp", text: "Present Perfect" }
+                        ],
+                        correct: {
+                            c1_today_so_far: "c1_pp",
+                            c1_today_9am: "c1_past",
+                            c1_these_days: "c1_pc",
+                            c1_nowadays: "c1_ps",
+                            c1_at_that_moment: "c1_past_cont",
+                            c1_tomorrow: "c1_future"
+                        },
+                        explanation: "today/these days/nowadays различаются только по контексту."
+                    },
+                    {
+                        id: "tm_match_ctx_2",
+                        type: "match",
+                        prompt: "Сопоставь контекст и время (this week/recently).",
+                        leftLabel: "Context snippet",
+                        rightLabel: "Tense",
+                        leftItems: [
+                            { key: "c2_this_week_so_far", text: "I have studied a lot this week." },
+                            { key: "c2_this_week_monday", text: "I studied a lot this week on Monday." },
+                            { key: "c2_recently_experience", text: "I have seen him recently." },
+                            { key: "c2_recently_finished", text: "I saw him recently at the mall." },
+                            { key: "c2_while", text: "While we were walking, it started to rain." },
+                            { key: "c2_prediction", text: "I think they will win." }
+                        ],
+                        rightItems: [
+                            { key: "c2_ps", text: "Present Simple" },
+                            { key: "c2_pc", text: "Present Continuous" },
+                            { key: "c2_past", text: "Past Simple" },
+                            { key: "c2_past_cont", text: "Past Continuous" },
+                            { key: "c2_future", text: "Future Simple / will" },
+                            { key: "c2_pp", text: "Present Perfect" }
+                        ],
+                        correct: {
+                            c2_this_week_so_far: "c2_pp",
+                            c2_this_week_monday: "c2_past",
+                            c2_recently_experience: "c2_pp",
+                            c2_recently_finished: "c2_past",
+                            c2_while: "c2_past_cont",
+                            c2_prediction: "c2_future"
+                        },
+                        explanation: "this week/recently требуют точного чтения контекста finished vs so far."
+                    },
+                    {
+                        id: "tm_match_ctx_3",
+                        type: "match",
+                        prompt: "Сопоставь контекст и время (mixed clues).",
+                        leftLabel: "Context snippet",
+                        rightLabel: "Tense",
+                        leftItems: [
+                            { key: "c3_habit", text: "She usually drinks tea after lunch." },
+                            { key: "c3_now_process", text: "She is drinking tea right now." },
+                            { key: "c3_finished_past", text: "She drank tea at 8 yesterday." },
+                            { key: "c3_background", text: "She was drinking tea when I called." },
+                            { key: "c3_future_plan", text: "She will drink tea tomorrow morning." },
+                            { key: "c3_result", text: "She has already drunk her tea." }
+                        ],
+                        rightItems: [
+                            { key: "c3_ps", text: "Present Simple" },
+                            { key: "c3_pc", text: "Present Continuous" },
+                            { key: "c3_past", text: "Past Simple" },
+                            { key: "c3_past_cont", text: "Past Continuous" },
+                            { key: "c3_future", text: "Future Simple / will" },
+                            { key: "c3_pp", text: "Present Perfect" }
+                        ],
+                        correct: {
+                            c3_habit: "c3_ps",
+                            c3_now_process: "c3_pc",
+                            c3_finished_past: "c3_past",
+                            c3_background: "c3_past_cont",
+                            c3_future_plan: "c3_future",
+                            c3_result: "c3_pp"
+                        },
+                        explanation: "Один и тот же глагол, но разные контексты и времена."
+                    },
+                    {
+                        id: "tm_match_ctx_4",
+                        type: "match",
+                        prompt: "Сопоставь контекст и время (однозначный выбор по деталям).",
+                        leftLabel: "Context snippet",
+                        rightLabel: "Tense",
+                        leftItems: [
+                            { key: "c4_general_fact", text: "Trains leave every hour." },
+                            { key: "c4_temp_now", text: "We are staying with friends this week." },
+                            { key: "c4_past_event", text: "We stayed with friends last weekend." },
+                            { key: "c4_in_progress_past", text: "We were staying with friends from 3 to 5 yesterday." },
+                            { key: "c4_future", text: "We will stay there next month." },
+                            { key: "c4_life_experience", text: "We have stayed there before." }
+                        ],
+                        rightItems: [
+                            { key: "c4_ps", text: "Present Simple" },
+                            { key: "c4_pc", text: "Present Continuous" },
+                            { key: "c4_past", text: "Past Simple" },
+                            { key: "c4_past_cont", text: "Past Continuous" },
+                            { key: "c4_future", text: "Future Simple / will" },
+                            { key: "c4_pp", text: "Present Perfect" }
+                        ],
+                        correct: {
+                            c4_general_fact: "c4_ps",
+                            c4_temp_now: "c4_pc",
+                            c4_past_event: "c4_past",
+                            c4_in_progress_past: "c4_past_cont",
+                            c4_future: "c4_future",
+                            c4_life_experience: "c4_pp"
+                        },
+                        explanation: "Контекстные детали убирают двусмысленность."
+                    }
+                ]
+            },
+            {
+                id: 'present_simple',
+                title: "Present Simple",
+                icon: "fa-calendar-day",
+                summary: "Регулярные действия, факты и расписания: usually, every day, never.",
                 theory: `
                     <div class="bg-blue-50 p-5 rounded-xl mb-6 text-blue-900 border-l-4 border-blue-500 shadow-sm">
-                        <h4 class="font-bold mb-2 flex items-center"><i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Главное правило</h4>
-                        <ul class="space-y-2 text-sm">
-                            <li>1. <strong>Единственное число:</strong> Владелец + <b>’s</b> <br><span class="opacity-70 ml-4">Cat<b>’s</b> tail, Kate<b>’s</b> book</span></li>
-                            <li>2. <strong>Множественное на -s:</strong> Владелец + <b>’</b> <br><span class="opacity-70 ml-4">Teachers<b>’</b> room</span></li>
-                            <li>3. <strong>Исключения (children, men):</strong> + <b>’s</b> <br><span class="opacity-70 ml-4">Children<b>’s</b> room</span></li>
-                        </ul>
-                    </div>
-                    <div class="text-sm text-gray-600 italic mb-4">
-                        <i class="fas fa-exclamation-triangle text-orange-400 mr-1"></i> <strong>Лайфхак:</strong> Не путай множественное число (Friends are here) и принадлежность (My friend's car).
+                        <h4 class="font-bold mb-2">Кратко</h4>
+                        <p class="text-sm mb-2">Используем <strong>Present Simple</strong> для привычек, фактов и повторяющихся действий.</p>
+                        <div class="bg-white border border-blue-200 rounded-lg p-3 text-sm mb-2">
+                            <strong>Формула:</strong> I/You/We/They + V1, He/She/It + V1+s/es
+                        </div>
+                        <p class="text-sm"><strong>Примеры:</strong> I go to work every day. She watches videos on Sundays.</p>
+                        <p class="text-sm mt-2 mb-2"><strong>Time markers:</strong></p>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">always — всегда</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">usually — обычно</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">every day — каждый день</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">often — часто</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">never — никогда</span>
+                        </div>
+                        <p class="text-sm mt-2"><strong>Частые ошибки:</strong> забывают <b>-s</b> с he/she/it, ставят am/is/are перед обычным глаголом без причины.</p>
                     </div>
                 `,
                 tasks: [
-                    { id: "poss_mc_1", type: "mc", prompt: "This is ___ bag.", options: ["Charlies'", "Charlie's"], correct: 1, explanation: "Имя Charlie в ед. числе, поэтому нужен 's." },
-                    { id: "poss_mc_2", type: "mc", prompt: "These ___ flowers are beautiful.", options: ["girls'", "girl's"], correct: 0, explanation: "'These' указывает на множественное число: girls'." },
-                    { id: "poss_fill_1", type: "fill", prompt: "The ___ room is clean. (children)", correct: "children's", explanation: "Children - исключение, добавляем 's.", acceptedAnswers: ["children's", "childrens"] },
-                    { id: "poss_tf_1", type: "tf", prompt: "Для owners во множественном числе на -s обычно ставится только апостроф.", correct: true, explanation: "Верно: teachers' room, parents' house." },
-                    { id: "poss_mc_3", type: "mc", prompt: "My ___ phone is new.", options: ["brother's", "brothers'"], correct: 0, explanation: "Один брат -> brother's." },
-                    { id: "poss_mc_4", type: "mc", prompt: "The ___ toys are everywhere.", options: ["childrens'", "children's"], correct: 1, explanation: "Children - неправильное мн. число, поэтому children's." },
-                    { id: "poss_mc_extra_1", type: "mc", prompt: "The ___ office is on the third floor.", options: ["manager's", "managers'"], correct: 0, explanation: "Речь об одном менеджере: manager's." },
-                    { id: "poss_mc_extra_2", type: "mc", prompt: "These are my ___ bikes.", options: ["friends'", "friend's"], correct: 0, explanation: "Несколько друзей: friends'." },
-                    { id: "poss_mc_extra_3", type: "mc", prompt: "The ___ room has new toys.", options: ["children's", "childrens'"], correct: 0, explanation: "Children - исключение, поэтому children's." },
-                    { id: "poss_mc_extra_4", type: "mc", prompt: "I borrowed ___ laptop yesterday.", options: ["James's", "James"], correct: 0, explanation: "Для принадлежности нужен апостроф и -s: James's." },
-                    { id: "poss_fill_2", type: "fill", prompt: "This is my ___ car. (parents)", correct: "parents'", explanation: "Parents оканчивается на -s, ставим только апостроф.", acceptedAnswers: ["parents'"] },
-                    { id: "poss_tf_2", type: "tf", prompt: "Форма \"James' bike\" может быть корректной для имени James.", correct: true, explanation: "Да, для имен на -s часто используется только апостроф." }
+                    { id: "ps_mc_1", type: "mc", prompt: "She ___ coffee every morning.", options: ["drink", "drinks"], correct: 1, explanation: "She -> глагол с -s: drinks." },
+                    { id: "ps_mc_2", type: "mc", prompt: "They ___ in London.", options: ["live", "lives"], correct: 0, explanation: "They -> базовая форма: live." },
+                    { id: "ps_mc_3", type: "mc", prompt: "My brother ___ football on Fridays.", options: ["play", "plays"], correct: 1, explanation: "He -> plays." },
+                    { id: "ps_mc_4", type: "mc", prompt: "We usually ___ dinner at 7.", options: ["have", "has"], correct: 0, explanation: "We -> have." },
+                    { id: "ps_mc_5", type: "mc", prompt: "Tom ___ to school by bus.", options: ["go", "goes"], correct: 1, explanation: "Tom (he) -> goes." },
+                    { id: "ps_mc_6", type: "mc", prompt: "I ___ TV in the evening.", options: ["watch", "watches"], correct: 0, explanation: "I -> watch." },
+                    { id: "ps_mc_7", type: "mc", prompt: "The shop ___ at 9 a.m.", options: ["open", "opens"], correct: 1, explanation: "The shop (it) -> opens." },
+                    { id: "ps_mc_8", type: "mc", prompt: "Cats ___ milk.", options: ["like", "likes"], correct: 0, explanation: "Cats (they) -> like." },
+                    { id: "ps_mc_9", type: "mc", prompt: "Anna ___ her homework after school.", options: ["do", "does"], correct: 1, explanation: "Anna (she) -> does." },
+                    { id: "ps_tf_1", type: "tf", prompt: "В Present Simple с he/she/it часто добавляется -s к глаголу.", correct: true, explanation: "Да, это ключевое правило." },
+                    { id: "ps_fill_1", type: "fill", prompt: "He ___ English every day. (study)", correct: "studies", acceptedAnswers: ["studies"], explanation: "После согласной + y: studies." },
+                    { id: "ps_fill_2", type: "fill", prompt: "I ___ up at 6 a.m. (get)", correct: "get", acceptedAnswers: ["get"], explanation: "I -> базовая форма get." }
                 ]
             },
             {
-                id: 'forsince',
-                title: "For vs Since",
-                icon: "fa-clock",
-                summary: "Как долго? (For) или С какого момента? (Since)",
+                id: 'present_continuous',
+                title: "Present Continuous",
+                icon: "fa-spinner",
+                summary: "Действие происходит сейчас или временно: now, right now, at the moment.",
                 theory: `
                     <div class="bg-purple-50 p-5 rounded-xl mb-6 text-purple-900 border-l-4 border-purple-500 shadow-sm">
-                         <h4 class="font-bold mb-2 flex items-center"><i class="fas fa-hourglass-half text-purple-500 mr-2"></i>Формула времени</h4>
-                        <div class="grid md:grid-cols-2 gap-4 mt-2">
-                            <div class="bg-white p-3 rounded-lg shadow-sm">
-                                <strong class="text-purple-600 block mb-1">Since (С момента)</strong>
-                                <span class="text-xs">2010, Monday, 9:00 AM.</span><br>
-                                <em class="text-xs text-gray-500">"Я здесь с утра."</em>
-                            </div>
-                            <div class="bg-white p-3 rounded-lg shadow-sm">
-                                <strong class="text-blue-600 block mb-1">For (В течение)</strong>
-                                <span class="text-xs">5 years, 2 hours, ages.</span><br>
-                                <em class="text-xs text-gray-500">"Жду уже 2 часа."</em>
-                            </div>
+                        <h4 class="font-bold mb-2">Кратко</h4>
+                        <p class="text-sm mb-2"><strong>Present Continuous</strong>: процесс в момент речи или временная ситуация.</p>
+                        <div class="bg-white border border-purple-200 rounded-lg p-3 text-sm mb-2">
+                            <strong>Формула:</strong> am/is/are + V-ing
                         </div>
+                        <p class="text-sm"><strong>Примеры:</strong> I am reading now. They are waiting at the bus stop.</p>
+                        <p class="text-sm mt-2 mb-2"><strong>Time markers:</strong></p>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">now — сейчас</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">right now — прямо сейчас</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">at the moment — в данный момент</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">currently — в настоящее время</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">today (temporary) — сегодня (временно)</span>
+                        </div>
+                        <p class="text-sm mt-2"><strong>Частые ошибки:</strong> пропускают am/is/are, или используют Present Continuous для постоянных фактов.</p>
                     </div>
                 `,
                 tasks: [
-                    { id: "fs_mc_1", type: "mc", prompt: "I have known him ___ 2018.", options: ["for", "since"], correct: 1, explanation: "2018 - точка отсчета, значит since." },
-                    { id: "fs_mc_2", type: "mc", prompt: "We've been here ___ two hours.", options: ["since", "for"], correct: 1, explanation: "Two hours - период времени, значит for." },
-                    { id: "fs_fill_1", type: "fill", prompt: "She has lived here ___ last year.", correct: "since", explanation: "Last year - момент начала, нужен since.", acceptedAnswers: ["since"] },
-                    { id: "fs_tf_1", type: "tf", prompt: "С months и years мы чаще используем for, а не since.", correct: true, explanation: "Да, это длительность: for months/for years." },
-                    { id: "fs_mc_3", type: "mc", prompt: "He has worked here ___ Monday.", options: ["for", "since"], correct: 1, explanation: "Monday - точка начала, нужен since." },
-                    { id: "fs_mc_4", type: "mc", prompt: "They have been friends ___ ten years.", options: ["since", "for"], correct: 1, explanation: "Ten years - длительность, нужен for." },
-                    { id: "fs_mc_extra_1", type: "mc", prompt: "I have studied English ___ three months.", options: ["for", "since"], correct: 0, explanation: "Three months - длительность, значит for." },
-                    { id: "fs_mc_extra_2", type: "mc", prompt: "She has worked remotely ___ 2022.", options: ["since", "for"], correct: 0, explanation: "2022 - момент начала, значит since." },
-                    { id: "fs_mc_extra_3", type: "mc", prompt: "We have been married ___ a long time.", options: ["since", "for"], correct: 1, explanation: "A long time - период, поэтому for." },
-                    { id: "fs_mc_extra_4", type: "mc", prompt: "He has felt better ___ this morning.", options: ["for", "since"], correct: 1, explanation: "This morning - точка начала, значит since." },
-                    { id: "fs_fill_2", type: "fill", prompt: "We have waited ___ 30 minutes.", correct: "for", explanation: "30 minutes - период времени, используем for.", acceptedAnswers: ["for"] },
-                    { id: "fs_tf_2", type: "tf", prompt: "В выражении \"since 9 o'clock\" используется since правильно.", correct: true, explanation: "Да, 9 o'clock - конкретный момент начала." }
+                    { id: "pc_mc_1", type: "mc", prompt: "I ___ a book now.", options: ["read", "am reading"], correct: 1, explanation: "Now -> am reading." },
+                    { id: "pc_mc_2", type: "mc", prompt: "She ___ TV at the moment.", options: ["is watching", "watches"], correct: 0, explanation: "At the moment -> is watching." },
+                    { id: "pc_mc_3", type: "mc", prompt: "They ___ dinner right now.", options: ["are cooking", "cook"], correct: 0, explanation: "Right now -> are cooking." },
+                    { id: "pc_mc_4", type: "mc", prompt: "We ___ for the teacher now.", options: ["wait", "are waiting"], correct: 1, explanation: "Процесс сейчас -> are waiting." },
+                    { id: "pc_mc_5", type: "mc", prompt: "Tom ___ on the phone now.", options: ["talks", "is talking"], correct: 1, explanation: "Tom -> is talking." },
+                    { id: "pc_mc_6", type: "mc", prompt: "My parents ___ in the kitchen.", options: ["are eating", "eat"], correct: 0, explanation: "Действие в момент речи -> are eating." },
+                    { id: "pc_mc_7", type: "mc", prompt: "It ___ outside now.", options: ["is raining", "rains"], correct: 0, explanation: "Now -> is raining." },
+                    { id: "pc_mc_8", type: "mc", prompt: "You ___ very fast today.", options: ["run", "are running"], correct: 1, explanation: "Временная ситуация today -> are running." },
+                    { id: "pc_mc_9", type: "mc", prompt: "The kids ___ in the yard now.", options: ["play", "are playing"], correct: 1, explanation: "Now -> are playing." },
+                    { id: "pc_tf_1", type: "tf", prompt: "В Present Continuous обязательно есть am/is/are + V-ing.", correct: true, explanation: "Да, это обязательная структура." },
+                    { id: "pc_fill_1", type: "fill", prompt: "He ___ to music right now. (listen)", correct: "is listening", acceptedAnswers: ["is listening"], explanation: "He -> is listening." },
+                    { id: "pc_fill_2", type: "fill", prompt: "We ___ for a taxi now. (wait)", correct: "are waiting", acceptedAnswers: ["are waiting"], explanation: "We -> are waiting." }
                 ]
             },
             {
-                id: 'pronouns',
-                title: "Местоимения & It's/Its",
-                icon: "fa-user-tag",
-                summary: "It's = It is. Its = Его. Myself = Я сам.",
+                id: 'past_simple',
+                title: "Past Simple",
+                icon: "fa-clock-rotate-left",
+                summary: "Завершенные действия в конкретный момент в прошлом: yesterday, last week, ago.",
                 theory: `
                     <div class="bg-green-50 p-5 rounded-xl mb-6 text-green-900 border-l-4 border-green-500 shadow-sm">
-                        <h4 class="font-bold mb-2">⚡ Разница в нюансах:</h4>
-                        <ul class="list-disc ml-5 space-y-1 text-sm">
-                            <li><strong>It’s</strong> = <em>It is</em> (It’s cold = Холодно).</li>
-                            <li><strong>Its</strong> = <em>Его/Ее</em> (The cat eats its food).</li>
-                            <li><strong>Возвратные (-self):</strong> Действие на себя (I cut <strong>myself</strong>).</li>
-                        </ul>
+                        <h4 class="font-bold mb-2">Кратко</h4>
+                        <p class="text-sm mb-2"><strong>Past Simple</strong> описывает факт, который завершился в прошлом.</p>
+                        <div class="bg-white border border-green-200 rounded-lg p-3 text-sm mb-2">
+                            <strong>Формула:</strong> V2 / did + V1 (в вопросах и отрицаниях)
+                        </div>
+                        <p class="text-sm"><strong>Примеры:</strong> I visited my grandma yesterday. Did you call him?</p>
+                        <p class="text-sm mt-2 mb-2"><strong>Time markers:</strong></p>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">yesterday — вчера</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">last week — на прошлой неделе</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">ago — назад</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">in 2021 — в 2021 году</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-200">last night — прошлой ночью</span>
+                        </div>
+                        <p class="text-sm mt-2"><strong>Частые ошибки:</strong> ставят did + V2, забывают маркеры прошлого.</p>
                     </div>
                 `,
                 tasks: [
-                    { id: "pro_mc_1", type: "mc", prompt: "___ a sunny day today.", options: ["It's", "Its"], correct: 0, explanation: "Это сокращение от It is -> It's." },
-                    { id: "pro_mc_2", type: "mc", prompt: "The cat is licking ___ paws.", options: ["it's", "its"], correct: 1, explanation: "Притяжательное местоимение: its." },
-                    { id: "pro_fill_1", type: "fill", prompt: "I cut ___ by accident.", correct: "myself", explanation: "Возвратное местоимение: myself.", acceptedAnswers: ["myself"] },
-                    { id: "pro_tf_1", type: "tf", prompt: "\"It's\" всегда означает \"it is\" или \"it has\".", correct: true, explanation: "Да, это форма сокращения, не притяжательная." },
-                    { id: "pro_mc_3", type: "mc", prompt: "The company changed ___ logo last year.", options: ["it's", "its"], correct: 1, explanation: "Притяжательная форма без апострофа: its." },
-                    { id: "pro_mc_4", type: "mc", prompt: "She made this cake by ___.", options: ["herself", "her"], correct: 0, explanation: "После by для значения 'сама' нужно herself." },
-                    { id: "pro_mc_extra_1", type: "mc", prompt: "The dog hurt ___ while jumping.", options: ["itself", "its"], correct: 0, explanation: "Нужно возвратное местоимение: itself." },
-                    { id: "pro_mc_extra_2", type: "mc", prompt: "___ raining again.", options: ["Its", "It's"], correct: 1, explanation: "Сокращение от It is: It's." },
-                    { id: "pro_mc_extra_3", type: "mc", prompt: "The robot updates ___ software automatically.", options: ["it's", "its"], correct: 1, explanation: "Притяжательная форма без апострофа: its." },
-                    { id: "pro_mc_extra_4", type: "mc", prompt: "They cooked dinner by ___.", options: ["themselves", "them"], correct: 0, explanation: "После by в значении 'сами' требуется themselves." },
-                    { id: "pro_fill_2", type: "fill", prompt: "We enjoyed ___ at the party.", correct: "ourselves", explanation: "Возвратное местоимение для we - ourselves.", acceptedAnswers: ["ourselves"] },
-                    { id: "pro_tf_2", type: "tf", prompt: "\"Its\" может означать \"it is\".", correct: false, explanation: "Нет, \"its\" - только притяжательное местоимение." }
+                    { id: "past_mc_1", type: "mc", prompt: "I ___ him yesterday.", options: ["see", "saw"], correct: 1, explanation: "Yesterday -> saw." },
+                    { id: "past_mc_2", type: "mc", prompt: "They ___ tennis last Sunday.", options: ["played", "play"], correct: 0, explanation: "Last Sunday -> played." },
+                    { id: "past_mc_3", type: "mc", prompt: "She ___ to Paris in 2021.", options: ["went", "go"], correct: 0, explanation: "In 2021 -> went." },
+                    { id: "past_mc_4", type: "mc", prompt: "We ___ dinner two hours ago.", options: ["have", "had"], correct: 1, explanation: "Ago -> had." },
+                    { id: "past_mc_5", type: "mc", prompt: "Tom ___ me last night.", options: ["called", "calls"], correct: 0, explanation: "Last night -> called." },
+                    { id: "past_mc_6", type: "mc", prompt: "My sister ___ the window.", options: ["opened", "opens"], correct: 0, explanation: "Завершенное действие в прошлом -> opened." },
+                    { id: "past_mc_7", type: "mc", prompt: "We ___ the movie yesterday evening.", options: ["watched", "watch"], correct: 0, explanation: "Yesterday evening -> watched." },
+                    { id: "past_mc_8", type: "mc", prompt: "He ___ breakfast at 8 a.m. yesterday.", options: ["ate", "eats"], correct: 0, explanation: "Конкретное время в прошлом -> ate." },
+                    { id: "past_mc_9", type: "mc", prompt: "I ___ my keys an hour ago.", options: ["lost", "lose"], correct: 0, explanation: "An hour ago -> lost." },
+                    { id: "past_tf_1", type: "tf", prompt: "В вопросе с did основной глагол идет в V1.", correct: true, explanation: "Верно: Did you go...?" },
+                    { id: "past_fill_1", type: "fill", prompt: "She ___ me last week. (help)", correct: "helped", acceptedAnswers: ["helped"], explanation: "Last week -> helped." },
+                    { id: "past_fill_2", type: "fill", prompt: "We ___ home late yesterday. (come)", correct: "came", acceptedAnswers: ["came"], explanation: "Неправильный глагол: came." }
                 ]
             },
             {
-                id: 'firstcond',
-                title: "First Conditional",
-                icon: "fa-random",
-                summary: "If (Present) ... Will (Future).",
+                id: 'past_continuous',
+                title: "Past Continuous",
+                icon: "fa-wave-square",
+                summary: "Действие в процессе в прошлом: was/were + V-ing, фон и прерывание.",
+                theory: `
+                    <div class="bg-emerald-50 p-5 rounded-xl mb-6 text-emerald-900 border-l-4 border-emerald-500 shadow-sm">
+                        <h4 class="font-bold mb-2">Кратко</h4>
+                        <p class="text-sm mb-2"><strong>Past Continuous</strong> показывает действие в процессе в конкретный момент в прошлом.</p>
+                        <div class="bg-white border border-emerald-200 rounded-lg p-3 text-sm mb-2">
+                            <strong>Form:</strong> was/were + V-ing
+                        </div>
+                        <div class="bg-white border border-emerald-200 rounded-lg p-3 text-sm mb-2">
+                            <strong>Usage:</strong> действие в процессе в прошлом; фоновое действие + прерывание в Past Simple.
+                        </div>
+                        <p class="text-sm mt-2 mb-2"><strong>Time markers:</strong></p>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">while</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">when</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">at 5 pm yesterday</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">at that moment</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">all day yesterday</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">all night</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">from 3 to 5</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">as (= while)</span>
+                        </div>
+                    </div>
+                `,
+                tasks: [
+                    { id: "pcon_mc_1", type: "mc", prompt: "At 5 pm yesterday, I ___ dinner.", options: ["was cooking", "cooked"], correct: 0, explanation: "Конкретный момент в прошлом + процесс -> was cooking." },
+                    { id: "pcon_mc_2", type: "mc", prompt: "When mom came home, we ___ TV.", options: ["were watching", "watched"], correct: 0, explanation: "Фон в процессе + короткое событие -> were watching." },
+                    { id: "pcon_mc_3", type: "mc", prompt: "While I ___, the phone rang.", options: ["was studying", "studied"], correct: 0, explanation: "Длительное фоновое действие -> was studying." },
+                    { id: "pcon_mc_4", type: "mc", prompt: "While Tom was driving, Anna ___ the map.", options: ["was reading", "read"], correct: 0, explanation: "Два параллельных процесса с while -> was reading." },
+                    { id: "pcon_mc_5", type: "mc", prompt: "They ___ football while it was raining.", options: ["were playing", "played"], correct: 0, explanation: "Действие в процессе в прошлом -> were playing." },
+                    { id: "pcon_mc_6", type: "mc", prompt: "She ___ at 8 pm; she was sleeping.", options: ["wasn't working", "didn't work"], correct: 0, explanation: "Отрицание Past Continuous: wasn't working." },
+                    { id: "pcon_mc_7", type: "mc", prompt: "___ you sleeping at midnight?", options: ["Were", "Did"], correct: 0, explanation: "Вопрос в Past Continuous: Were you ...?" },
+                    { id: "pcon_mc_8", type: "mc", prompt: "I ___ not listening when you called.", options: ["was", "did"], correct: 0, explanation: "I was not listening." },
+                    { id: "pcon_mc_9", type: "mc", prompt: "At that moment, the children ___ in the yard.", options: ["were playing", "played"], correct: 0, explanation: "At that moment -> were playing." },
+                    { id: "pcon_tf_1", type: "tf", prompt: "Past Continuous часто описывает фон, который прерывается действием в Past Simple.", correct: true, explanation: "Да: I was reading when he called." },
+                    { id: "pcon_fill_1", type: "fill", prompt: "We ___ from 3 to 5 yesterday. (study)", correct: "were studying", acceptedAnswers: ["were studying"], explanation: "From 3 to 5 -> процесс в прошлом." },
+                    { id: "pcon_fill_2", type: "fill", prompt: "He ___ when I saw him. (run)", correct: "was running", acceptedAnswers: ["was running"], explanation: "run -> running, процесс в прошлом -> was running." }
+                ]
+            },
+            {
+                id: 'future_simple',
+                title: "Future Simple / will",
+                icon: "fa-forward",
+                summary: "Решение в момент речи, обещание, предсказание: will + V1.",
                 theory: `
                     <div class="bg-yellow-50 p-5 rounded-xl mb-6 text-yellow-900 border-l-4 border-yellow-500 shadow-sm">
-                        <h4 class="font-bold mb-2 text-center text-lg">⚠️ Золотое правило</h4>
-                        <p class="text-center mb-3">В части с <strong>IF</strong> (если) НЕЛЬЗЯ ставить WILL!</p>
-                        <div class="bg-white p-3 rounded border border-yellow-200 text-center font-mono text-sm">
-                            If + Present Simple, ... Future (Will)
+                        <h4 class="font-bold mb-2">Кратко</h4>
+                        <p class="text-sm mb-2"><strong>Future Simple</strong> = <b>will + глагол</b>. Для решений, обещаний и прогнозов.</p>
+                        <div class="bg-white border border-yellow-200 rounded-lg p-3 text-sm mb-2">
+                            <strong>Формула:</strong> will + V1
                         </div>
-                        <p class="text-center text-xs text-gray-500 mt-2">If it rains (Present), we will stay (Future) home.</p>
+                        <p class="text-sm"><strong>Примеры:</strong> I will help you. It will rain tomorrow.</p>
+                        <p class="text-sm mt-2 mb-2"><strong>Time markers:</strong></p>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-900 border border-yellow-200">tomorrow — завтра</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-900 border border-yellow-200">soon — скоро</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-900 border border-yellow-200">tonight — сегодня вечером</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-900 border border-yellow-200">next week — на следующей неделе</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-900 border border-yellow-200">I think — я думаю</span>
+                        </div>
+                        <p class="text-sm mt-2"><strong>Частые ошибки:</strong> ставят will + V2 или will + to V1.</p>
                     </div>
                 `,
                 tasks: [
-                    { id: "fc_mc_1", type: "mc", prompt: "If it ___ tomorrow, we will stay home.", options: ["rain", "rains", "will rain"], correct: 1, explanation: "После if в первом условном - Present Simple." },
-                    { id: "fc_mc_2", type: "mc", prompt: "If I have time, I ___ you.", options: ["will help", "help"], correct: 0, explanation: "В результате используем will + verb." },
-                    { id: "fc_fill_1", type: "fill", prompt: "If we miss the bus, we ___ a taxi.", correct: "will take", explanation: "Результат: will take.", acceptedAnswers: ["will take", "take"] },
-                    { id: "fc_tf_1", type: "tf", prompt: "В части с if можно ставить will, если это First Conditional.", correct: false, explanation: "Нет, после if обычно Present Simple." },
-                    { id: "fc_mc_3", type: "mc", prompt: "If she ___ early, we will start at 9.", options: ["arrives", "will arrive"], correct: 0, explanation: "После if используем Present Simple: arrives." },
-                    { id: "fc_mc_4", type: "mc", prompt: "If they study hard, they ___ the exam.", options: ["pass", "will pass"], correct: 1, explanation: "В главной части First Conditional: will + verb." },
-                    { id: "fc_mc_extra_1", type: "mc", prompt: "If you ___ now, you will catch the train.", options: ["leave", "will leave"], correct: 0, explanation: "После if в First Conditional нужен Present Simple: leave." },
-                    { id: "fc_mc_extra_2", type: "mc", prompt: "If it is sunny, we ___ to the beach.", options: ["go", "will go"], correct: 1, explanation: "В главной части используем will + verb." },
-                    { id: "fc_mc_extra_3", type: "mc", prompt: "If they ___ late, we will begin without them.", options: ["are", "will be"], correct: 0, explanation: "В if-части нужен Present Simple: are." },
-                    { id: "fc_mc_extra_4", type: "mc", prompt: "If I finish early, I ___ you tonight.", options: ["call", "will call"], correct: 1, explanation: "Результат в будущем: will call." },
-                    { id: "fc_fill_2", type: "fill", prompt: "If I see Tom, I ___ him the news.", correct: "will tell", explanation: "Результат в будущем: will tell.", acceptedAnswers: ["will tell", "tell"] },
-                    { id: "fc_tf_2", type: "tf", prompt: "В предложении \"If it rains, we will cancel the picnic\" форма корректна.", correct: true, explanation: "Да, if + Present Simple и will в главной части." }
+                    { id: "fut_mc_1", type: "mc", prompt: "I ___ call you tonight.", options: ["will", "am"], correct: 0, explanation: "Future Simple: will call." },
+                    { id: "fut_mc_2", type: "mc", prompt: "She ___ help us tomorrow.", options: ["will", "does"], correct: 0, explanation: "Tomorrow -> will help." },
+                    { id: "fut_mc_3", type: "mc", prompt: "They ___ be late, I think.", options: ["will", "are"], correct: 0, explanation: "Прогноз -> will be." },
+                    { id: "fut_mc_4", type: "mc", prompt: "We ___ start at 9.", options: ["will", "did"], correct: 0, explanation: "План решения -> will start." },
+                    { id: "fut_mc_5", type: "mc", prompt: "It ___ snow tomorrow.", options: ["will", "is"], correct: 0, explanation: "Прогноз на завтра -> will snow." },
+                    { id: "fut_mc_6", type: "mc", prompt: "I promise I ___ forget.", options: ["won't", "don't"], correct: 0, explanation: "Отрицание в будущем: won't." },
+                    { id: "fut_mc_7", type: "mc", prompt: "He ___ answer your email soon.", options: ["will", "has"], correct: 0, explanation: "Soon -> will answer." },
+                    { id: "fut_mc_8", type: "mc", prompt: "___ you help me?", options: ["Will", "Did"], correct: 0, explanation: "Вежливая просьба: Will you...?" },
+                    { id: "fut_mc_9", type: "mc", prompt: "The team ___ win this match.", options: ["will", "wins"], correct: 0, explanation: "Прогноз -> will win." },
+                    { id: "fut_tf_1", type: "tf", prompt: "После will используется базовая форма глагола (V1).", correct: true, explanation: "Да: will go, will do, will see." },
+                    { id: "fut_fill_1", type: "fill", prompt: "I ___ you tomorrow. (text)", correct: "will text", acceptedAnswers: ["will text", "i will text"], explanation: "Future Simple: will text." },
+                    { id: "fut_fill_2", type: "fill", prompt: "We ___ late. (not be)", correct: "won't be", acceptedAnswers: ["won't be", "will not be"], explanation: "Отрицательная форма: won't be." }
                 ]
             },
             {
-                id: 'perfectpast',
-                title: "Present Perfect vs Past",
-                icon: "fa-history",
-                summary: "Результат сейчас vs Конкретное прошлое.",
+                id: 'present_perfect',
+                title: "Present Perfect",
+                icon: "fa-check-double",
+                summary: "Опыт и результат к настоящему: have/has + V3, already/yet/ever/never.",
                 theory: `
                     <div class="bg-red-50 p-5 rounded-xl mb-6 text-red-900 border-l-4 border-red-500 shadow-sm">
-                        <h4 class="font-bold mb-2">🔍 Слова-маркеры (подсказки)</h4>
-                        <div class="grid grid-cols-2 gap-4 mt-2">
-                            <div>
-                                <strong class="text-blue-600 block border-b border-blue-200 mb-1">Past Simple</strong>
-                                <span class="text-xs block">Yesterday</span>
-                                <span class="text-xs block">Last week</span>
-                                <span class="text-xs block">In 2010</span>
-                                <span class="text-xs block">Ago</span>
-                                <em class="text-xs text-gray-500 mt-1 block">Факт в прошлом.</em>
-                            </div>
-                            <div>
-                                <strong class="text-purple-600 block border-b border-purple-200 mb-1">Present Perfect</strong>
-                                <span class="text-xs block">Just / Already</span>
-                                <span class="text-xs block">Yet</span>
-                                <span class="text-xs block">Ever / Never</span>
-                                <span class="text-xs block">Since / For</span>
-                                <em class="text-xs text-gray-500 mt-1 block">Результат или опыт.</em>
-                            </div>
+                        <h4 class="font-bold mb-2">Кратко</h4>
+                        <p class="text-sm mb-2"><strong>Present Perfect</strong> связывает прошлое и настоящее: важен результат сейчас.</p>
+                        <div class="bg-white border border-red-200 rounded-lg p-3 text-sm mb-2">
+                            <strong>Формула:</strong> have/has + V3
+                        </div>
+                        <p class="text-sm"><strong>Примеры:</strong> I have finished my work. She has never tried sushi.</p>
+                        <p class="text-sm mt-2 mb-2"><strong>Time markers:</strong></p>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">already — уже</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">yet — еще (вопрос/отриц.)</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">ever — когда-либо</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">never — никогда</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 border border-red-200">just — только что</span>
+                        </div>
+                        <p class="text-sm mt-2"><strong>Частые ошибки:</strong> используют Present Perfect с точным временем (yesterday, in 2020).</p>
+                    </div>
+                `,
+                tasks: [
+                    { id: "pp_mc_1", type: "mc", prompt: "I ___ my homework already.", options: ["finished", "have finished"], correct: 1, explanation: "Already -> have finished." },
+                    { id: "pp_mc_2", type: "mc", prompt: "She ___ never been to Spain.", options: ["has", "is"], correct: 0, explanation: "She -> has never been." },
+                    { id: "pp_mc_3", type: "mc", prompt: "___ you ever tried ramen?", options: ["Did", "Have"], correct: 1, explanation: "Опыт -> Have you ever...?" },
+                    { id: "pp_mc_4", type: "mc", prompt: "They ___ just arrived.", options: ["have", "did"], correct: 0, explanation: "Just -> have arrived." },
+                    { id: "pp_mc_5", type: "mc", prompt: "He ___ his keys.", options: ["has lost", "lost"], correct: 0, explanation: "Результат сейчас -> has lost." },
+                    { id: "pp_mc_6", type: "mc", prompt: "We ___ this movie before.", options: ["have seen", "saw"], correct: 0, explanation: "Before/опыт -> have seen." },
+                    { id: "pp_mc_7", type: "mc", prompt: "I ___ not finished yet.", options: ["have", "am"], correct: 0, explanation: "Yet -> have not finished." },
+                    { id: "pp_mc_8", type: "mc", prompt: "Tom ___ already eaten.", options: ["has", "did"], correct: 0, explanation: "Tom -> has eaten." },
+                    { id: "pp_mc_9", type: "mc", prompt: "My parents ___ to Italy twice.", options: ["have been", "went"], correct: 0, explanation: "Опыт (twice) -> have been." },
+                    { id: "pp_tf_1", type: "tf", prompt: "В Present Perfect обычно нет точного указания прошлого времени типа 'yesterday'.", correct: true, explanation: "Да, это типичная граница с Past Simple." },
+                    { id: "pp_fill_1", type: "fill", prompt: "She has ___ her room. (clean)", correct: "cleaned", acceptedAnswers: ["cleaned"], explanation: "V3 от clean: cleaned." },
+                    { id: "pp_fill_2", type: "fill", prompt: "I have ___ this book before. (read)", correct: "read", acceptedAnswers: ["read"], explanation: "V3 read пишется так же." }
+                ]
+            },
+            {
+                id: 'mix_ps_pc',
+                title: "Mixed: Present Simple vs Present Continuous",
+                icon: "fa-code-branch",
+                summary: "Привычка/факт vs действие сейчас или временно.",
+                theory: `
+                    <div class="bg-cyan-50 p-5 rounded-xl mb-6 text-cyan-900 border-l-4 border-cyan-500 shadow-sm">
+                        <h4 class="font-bold mb-2">Кратко</h4>
+                        <p class="text-sm mb-2"><strong>Present Simple vs Present Continuous:</strong> обычное и регулярное vs процесс сейчас/временный период.</p>
+                        <p class="text-sm mt-2 mb-2"><strong>Time markers:</strong></p>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-800 border border-cyan-200">every day</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-800 border border-cyan-200">usually</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-800 border border-cyan-200">now</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-800 border border-cyan-200">right now</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-800 border border-cyan-200">these days</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-cyan-100 text-cyan-800 border border-cyan-200">nowadays</span>
                         </div>
                     </div>
                 `,
                 tasks: [
-                    { id: "pp_mc_1", type: "mc", prompt: "I ___ him yesterday.", options: ["saw", "have seen"], correct: 0, explanation: "Yesterday - маркер Past Simple." },
-                    { id: "pp_mc_2", type: "mc", prompt: "___ you ever been to London?", options: ["Did", "Have"], correct: 1, explanation: "Ever + опыт: Have you ever...?" },
-                    { id: "pp_fill_1", type: "fill", prompt: "I have ___ my homework already.", correct: "finished", explanation: "Already + Present Perfect: have finished.", acceptedAnswers: ["finished"] },
-                    { id: "pp_tf_1", type: "tf", prompt: "Фраза 'We met in 2015' использует Past Simple корректно.", correct: true, explanation: "Да, указан конкретный момент в прошлом." },
-                    { id: "pp_mc_3", type: "mc", prompt: "She ___ just ___ the email.", options: ["has / sent", "did / send"], correct: 0, explanation: "Just обычно с Present Perfect: has sent." },
-                    { id: "pp_mc_4", type: "mc", prompt: "We ___ to Paris in 2019.", options: ["have gone", "went"], correct: 1, explanation: "In 2019 - конкретное прошлое, Past Simple: went." },
-                    { id: "pp_mc_extra_1", type: "mc", prompt: "I have never ___ a snake.", options: ["seen", "saw"], correct: 0, explanation: "Never обычно с Present Perfect: have never seen." },
-                    { id: "pp_mc_extra_2", type: "mc", prompt: "They ___ their homework an hour ago.", options: ["have finished", "finished"], correct: 1, explanation: "An hour ago - маркер Past Simple: finished." },
-                    { id: "pp_mc_extra_3", type: "mc", prompt: "___ you already eaten?", options: ["Did", "Have"], correct: 1, explanation: "Already с текущим результатом: Have you already...?" },
-                    { id: "pp_mc_extra_4", type: "mc", prompt: "She ___ to Berlin last summer.", options: ["has gone", "went"], correct: 1, explanation: "Last summer указывает на Past Simple: went." },
-                    { id: "pp_fill_2", type: "fill", prompt: "Have you ___ eaten sushi?", correct: "ever", explanation: "Для опыта обычно используем ever в вопросах.", acceptedAnswers: ["ever"] },
-                    { id: "pp_tf_2", type: "tf", prompt: "\"I have visited Rome last year\" - грамматически правильно.", correct: false, explanation: "Нет, с last year нужен Past Simple: I visited Rome last year." }
+                    { id: "mix_pspc_mc_1", type: "mc", prompt: "She usually ___ tea, but now she ___ coffee.", options: ["drinks / is drinking", "is drinking / drinks"], correct: 0, explanation: "Usually -> Present Simple, now -> Present Continuous." },
+                    { id: "mix_pspc_mc_2", type: "mc", prompt: "I ___ to work by bus every day.", options: ["go", "am going"], correct: 0, explanation: "Every day -> Present Simple." },
+                    { id: "mix_pspc_mc_3", type: "mc", prompt: "Look! The baby ___.", options: ["cries", "is crying"], correct: 1, explanation: "Look! -> процесс сейчас." },
+                    { id: "mix_pspc_mc_4", type: "mc", prompt: "People ___ smartphones nowadays.", options: ["use", "are using"], correct: 0, explanation: "Nowadays -> общий факт." },
+                    { id: "mix_pspc_mc_5", type: "mc", prompt: "I'm working late these days.", options: ["Present Continuous", "Present Simple"], correct: 0, explanation: "These days -> временная ситуация." },
+                    { id: "mix_pspc_mc_6", type: "mc", prompt: "He ___ football on Sundays.", options: ["plays", "is playing"], correct: 0, explanation: "On Sundays -> привычка." },
+                    { id: "mix_pspc_mc_7", type: "mc", prompt: "We ___ for Anna at the moment.", options: ["wait", "are waiting"], correct: 1, explanation: "At the moment -> процесс." },
+                    { id: "mix_pspc_mc_8", type: "mc", prompt: "My brother ___ at a cafe this month.", options: ["works", "is working"], correct: 1, explanation: "Временный период -> is working." },
+                    { id: "mix_pspc_mc_9", type: "mc", prompt: "Water ___ at 100 C.", options: ["boils", "is boiling"], correct: 0, explanation: "Научный факт -> Present Simple." },
+                    { id: "mix_pspc_tf_1", type: "tf", prompt: "'Now' чаще требует Present Continuous.", correct: true, explanation: "Да, это маркер действия в момент речи." },
+                    { id: "mix_pspc_fill_1", type: "fill", prompt: "She ___ her homework now. (do)", correct: "is doing", acceptedAnswers: ["is doing"], explanation: "Now -> is doing." },
+                    { id: "mix_pspc_fill_2", type: "fill", prompt: "He ___ coffee every morning. (drink)", correct: "drinks", acceptedAnswers: ["drinks"], explanation: "Every morning -> drinks." }
+                ]
+            },
+            {
+                id: 'mix_past_simple_past_continuous',
+                title: "Mixed: Past Simple vs Past Continuous",
+                icon: "fa-arrows-left-right",
+                summary: "Короткое завершенное событие vs процесс в прошлом.",
+                theory: `
+                    <div class="bg-teal-50 p-5 rounded-xl mb-6 text-teal-900 border-l-4 border-teal-500 shadow-sm">
+                        <h4 class="font-bold mb-2">Кратко</h4>
+                        <p class="text-sm mb-2"><strong>Past Simple vs Past Continuous:</strong> finished event vs background action in progress.</p>
+                        <p class="text-sm mt-2 mb-2"><strong>Time markers:</strong></p>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-800 border border-teal-200">yesterday</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-800 border border-teal-200">ago</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-800 border border-teal-200">while</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-800 border border-teal-200">when</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-teal-100 text-teal-800 border border-teal-200">at that moment</span>
+                        </div>
+                    </div>
+                `,
+                tasks: [
+                    { id: "mix_pastc_mc_1", type: "mc", prompt: "I ___ dinner when he called.", options: ["was cooking", "cooked"], correct: 0, explanation: "Фоновый процесс + прерывание." },
+                    { id: "mix_pastc_mc_2", type: "mc", prompt: "She ___ me yesterday evening.", options: ["called", "was calling"], correct: 0, explanation: "Конкретный завершенный факт -> Past Simple." },
+                    { id: "mix_pastc_mc_3", type: "mc", prompt: "While they ___, the lights went out.", options: ["were talking", "talked"], correct: 0, explanation: "While + процесс -> were talking." },
+                    { id: "mix_pastc_mc_4", type: "mc", prompt: "At 9 pm, we ___ TV.", options: ["were watching", "watched"], correct: 0, explanation: "Точный момент + процесс." },
+                    { id: "mix_pastc_mc_5", type: "mc", prompt: "He ___ his phone an hour ago.", options: ["lost", "was losing"], correct: 0, explanation: "An hour ago -> Past Simple." },
+                    { id: "mix_pastc_mc_6", type: "mc", prompt: "When the teacher came in, students ___.", options: ["were writing", "wrote"], correct: 0, explanation: "Фон в процессе -> were writing." },
+                    { id: "mix_pastc_mc_7", type: "mc", prompt: "We ___ for two hours yesterday.", options: ["walked", "were walking"], correct: 1, explanation: "Длительность в прошлом как процесс." },
+                    { id: "mix_pastc_mc_8", type: "mc", prompt: "They ___ home late last night.", options: ["came", "were coming"], correct: 0, explanation: "Завершенное событие." },
+                    { id: "mix_pastc_mc_9", type: "mc", prompt: "As I ___ home, it started to snow.", options: ["was walking", "walked"], correct: 0, explanation: "as = while -> процесс." },
+                    { id: "mix_pastc_tf_1", type: "tf", prompt: "В конструкции 'while ...' часто используется Past Continuous для фонового действия.", correct: true, explanation: "Да, это типичный паттерн." },
+                    { id: "mix_pastc_fill_1", type: "fill", prompt: "She ___ when I opened the door. (sleep)", correct: "was sleeping", acceptedAnswers: ["was sleeping"], explanation: "Фон -> was sleeping." },
+                    { id: "mix_pastc_fill_2", type: "fill", prompt: "We ___ football yesterday. (play)", correct: "played", acceptedAnswers: ["played"], explanation: "Вчера, факт -> played." }
+                ]
+            },
+            {
+                id: 'mix_present_perfect_past_simple',
+                title: "Mixed: Present Perfect vs Past Simple",
+                icon: "fa-shuffle",
+                summary: "Опыт/результат к настоящему vs завершенный факт в прошлом.",
+                theory: `
+                    <div class="bg-rose-50 p-5 rounded-xl mb-6 text-rose-900 border-l-4 border-rose-500 shadow-sm">
+                        <h4 class="font-bold mb-2">Кратко</h4>
+                        <p class="text-sm mb-2"><strong>Present Perfect vs Past Simple:</strong> связь с настоящим (have/has + V3) vs конкретное прошлое время (V2).</p>
+                        <p class="text-sm mt-2 mb-2"><strong>Time markers:</strong></p>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">already / yet / ever / never</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">yesterday / ago / in 2020</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">today so far vs today at 9 AM</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">this week so far vs on Monday</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-200">recently (context)</span>
+                        </div>
+                    </div>
+                `,
+                tasks: [
+                    { id: "mix_pppast_mc_1", type: "mc", prompt: "I ___ him yesterday.", options: ["saw", "have seen"], correct: 0, explanation: "Yesterday -> Past Simple." },
+                    { id: "mix_pppast_mc_2", type: "mc", prompt: "I ___ him recently. (life experience)", options: ["have seen", "saw"], correct: 0, explanation: "Recently как актуальный опыт -> Present Perfect." },
+                    { id: "mix_pppast_mc_3", type: "mc", prompt: "I ___ him recently at the mall.", options: ["have seen", "saw"], correct: 1, explanation: "Конкретный завершенный эпизод -> Past Simple." },
+                    { id: "mix_pppast_mc_4", type: "mc", prompt: "She ___ her homework already.", options: ["has finished", "finished"], correct: 0, explanation: "Already -> Present Perfect." },
+                    { id: "mix_pppast_mc_5", type: "mc", prompt: "We ___ this week on Monday.", options: ["studied", "have studied"], correct: 0, explanation: "Finished event with Monday -> Past Simple." },
+                    { id: "mix_pppast_mc_6", type: "mc", prompt: "We ___ a lot this week.", options: ["have studied", "studied"], correct: 0, explanation: "This week so far -> Present Perfect." },
+                    { id: "mix_pppast_mc_7", type: "mc", prompt: "___ you ever tried sushi?", options: ["Have", "Did"], correct: 0, explanation: "Опыт без времени -> Have you ever...?" },
+                    { id: "mix_pppast_mc_8", type: "mc", prompt: "He ___ in 2019.", options: ["went", "has gone"], correct: 0, explanation: "In 2019 -> Past Simple." },
+                    { id: "mix_pppast_mc_9", type: "mc", prompt: "I ___ three emails today so far.", options: ["have sent", "sent"], correct: 0, explanation: "Today so far -> Present Perfect." },
+                    { id: "mix_pppast_tf_1", type: "tf", prompt: "Слова 'yesterday' и 'in 2020' обычно не сочетаются с Present Perfect.", correct: true, explanation: "Да, это маркеры Past Simple." },
+                    { id: "mix_pppast_fill_1", type: "fill", prompt: "She ___ her keys an hour ago. (lose)", correct: "lost", acceptedAnswers: ["lost"], explanation: "An hour ago -> Past Simple." },
+                    { id: "mix_pppast_fill_2", type: "fill", prompt: "They ___ the report already. (finish)", correct: "have finished", acceptedAnswers: ["have finished"], explanation: "Already -> Present Perfect." }
+                ]
+            },
+            {
+                id: 'mixed_all',
+                title: "Mixed Practice: All Tenses",
+                icon: "fa-layer-group",
+                summary: "Все шесть времен в одной тренировке.",
+                theory: `
+                    <div class="bg-indigo-50 p-5 rounded-xl mb-6 text-indigo-900 border-l-4 border-indigo-500 shadow-sm">
+                        <h4 class="font-bold mb-2">Кратко</h4>
+                        <p class="text-sm mb-2">Смотри на контекст: <strong>привычка, сейчас, прошлый факт, фон в прошлом, будущее, результат к настоящему</strong>.</p>
+                        <p class="text-sm mt-2 mb-2"><strong>Time markers:</strong></p>
+                        <div class="flex flex-wrap gap-2 mb-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">every day</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">right now</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">yesterday</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">while / at that moment</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">tomorrow / I think</span>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">already / ever / yet</span>
+                        </div>
+                    </div>
+                `,
+                tasks: [
+                    { id: "mixa_mc_1", type: "mc", prompt: "I usually ___ at 6 a.m.", options: ["get up", "am getting up"], correct: 0, explanation: "Usually -> Present Simple." },
+                    { id: "mixa_mc_2", type: "mc", prompt: "She ___ a shower now.", options: ["has", "is having"], correct: 1, explanation: "Now -> Present Continuous." },
+                    { id: "mixa_mc_3", type: "mc", prompt: "We ___ them last weekend.", options: ["met", "have met"], correct: 0, explanation: "Last weekend -> Past Simple." },
+                    { id: "mixa_mc_4", type: "mc", prompt: "At that moment, they ___ dinner.", options: ["were having", "had"], correct: 0, explanation: "At that moment -> Past Continuous." },
+                    { id: "mixa_mc_5", type: "mc", prompt: "I ___ finish this tomorrow, I promise.", options: ["will", "am"], correct: 0, explanation: "Обещание -> will finish." },
+                    { id: "mixa_mc_6", type: "mc", prompt: "He ___ already ___ the message.", options: ["has / sent", "did / send"], correct: 0, explanation: "Already -> Present Perfect." },
+                    { id: "mixa_mc_7", type: "mc", prompt: "While I was driving, my friend ___ to music.", options: ["was listening", "listened"], correct: 0, explanation: "Два параллельных процесса в прошлом." },
+                    { id: "mixa_mc_8", type: "mc", prompt: "My dad ___ that film in 2018.", options: ["saw", "has seen"], correct: 0, explanation: "In 2018 -> Past Simple." },
+                    { id: "mixa_mc_9", type: "mc", prompt: "People ___ online shopping nowadays.", options: ["prefer", "are preferring"], correct: 0, explanation: "Nowadays -> Present Simple." },
+                    { id: "mixa_tf_1", type: "tf", prompt: "Маркер 'while' часто указывает на Past Continuous в фоновой части предложения.", correct: true, explanation: "Да, особенно в сочетании с коротким действием в Past Simple." },
+                    { id: "mixa_fill_1", type: "fill", prompt: "She ___ to school every day. (go)", correct: "goes", acceptedAnswers: ["goes"], explanation: "Every day -> Present Simple." },
+                    { id: "mixa_fill_2", type: "fill", prompt: "We ___ for two hours yesterday evening. (work)", correct: "were working", acceptedAnswers: ["were working"], explanation: "Длительный процесс в прошлом." }
                 ]
             }
         ];
 
         const studyPlan = [
-            { day: 1, title: "Притяжательный ('s)", task: "Повтори правило и выполни 2 задания по теме." },
-            { day: 2, title: "It's vs Its", task: "Разбери разницу и пройди мини-практику." },
-            { day: 3, title: "For/Since", task: "Отработай точки начала и длительность." },
-            { day: 4, title: "First Conditional", task: "Собери 5 предложений по формуле if + present." },
-            { day: 5, title: "Present Perfect vs Past", task: "Тренируй маркеры времени и примеры." },
-            { day: 6, title: "Смешанная практика", task: "Выполни задачи из разных тем." },
-            { day: 7, title: "Финальный день", task: "Проверь слабые места и заверши план." }
+            { day: 1, title: "Day 1: Time Markers", task: "Сделай mixed-маркеры и контекстные сопоставления по всем временам." },
+            { day: 2, title: "Day 2: Present Simple + Present Continuous", task: "Пройди оба времени и закрепи привычка vs процесс сейчас." },
+            { day: 3, title: "Day 3: Past Simple + Past Continuous", task: "Отработай V2 и was/were + V-ing с прерыванием." },
+            { day: 4, title: "Day 4: Future Simple", task: "Закрепи will + V1, обещания и прогнозы." },
+            { day: 5, title: "Day 5: Present Perfect", task: "Повтори have/has + V3 и границу с Past Simple." },
+            { day: 6, title: "Day 6: Pair Mixes", task: "Пройди три микс-раздела: PS vs PC, Past vs Past Continuous, PP vs Past." },
+            { day: 7, title: "Day 7: Mixed All", task: "Сделай общий микс по всем 6 временам и проверь слабые места." }
         ];
-
         /* --- 2. STATE MANAGEMENT (LocalStorage) --- */
         let activeTopicIndex = 0;
         let progressState = null;
@@ -437,7 +1052,17 @@
         const ANSWER_COOLDOWN_MS = 2000;
         const CHALLENGE_TICK_VOLUME = 0.03;
         const TOPIC_PALETTES = {
-            possessive: {
+            time_markers: {
+                frame: "border-sky-200 bg-sky-50/70",
+                frameTitle: "text-sky-900",
+                frameSubtle: "text-sky-700",
+                controlBtn: "border-sky-200 text-sky-700 hover:bg-sky-100",
+                startBtn: "bg-sky-600 border border-sky-700 text-white hover:bg-sky-700",
+                progressBar: "bg-sky-500",
+                floating: "bg-sky-50 border-sky-500 text-sky-900",
+                lockCard: "bg-sky-50/95 border-sky-300 text-sky-900"
+            },
+            present_simple: {
                 frame: "border-blue-200 bg-blue-50/70",
                 frameTitle: "text-blue-900",
                 frameSubtle: "text-blue-700",
@@ -447,7 +1072,7 @@
                 floating: "bg-blue-50 border-blue-500 text-blue-900",
                 lockCard: "bg-blue-50/95 border-blue-300 text-blue-900"
             },
-            forsince: {
+            present_continuous: {
                 frame: "border-purple-200 bg-purple-50/70",
                 frameTitle: "text-purple-900",
                 frameSubtle: "text-purple-700",
@@ -457,7 +1082,7 @@
                 floating: "bg-purple-50 border-purple-500 text-purple-900",
                 lockCard: "bg-purple-50/95 border-purple-300 text-purple-900"
             },
-            pronouns: {
+            past_simple: {
                 frame: "border-green-200 bg-green-50/70",
                 frameTitle: "text-green-900",
                 frameSubtle: "text-green-700",
@@ -467,7 +1092,17 @@
                 floating: "bg-green-50 border-green-500 text-green-900",
                 lockCard: "bg-green-50/95 border-green-300 text-green-900"
             },
-            firstcond: {
+            past_continuous: {
+                frame: "border-emerald-200 bg-emerald-50/70",
+                frameTitle: "text-emerald-900",
+                frameSubtle: "text-emerald-700",
+                controlBtn: "border-emerald-200 text-emerald-700 hover:bg-emerald-100",
+                startBtn: "bg-emerald-600 border border-emerald-700 text-white hover:bg-emerald-700",
+                progressBar: "bg-emerald-500",
+                floating: "bg-emerald-50 border-emerald-500 text-emerald-900",
+                lockCard: "bg-emerald-50/95 border-emerald-300 text-emerald-900"
+            },
+            future_simple: {
                 frame: "border-yellow-200 bg-yellow-50/70",
                 frameTitle: "text-yellow-900",
                 frameSubtle: "text-yellow-700",
@@ -477,7 +1112,7 @@
                 floating: "bg-yellow-50 border-yellow-500 text-yellow-900",
                 lockCard: "bg-yellow-50/95 border-yellow-300 text-yellow-900"
             },
-            perfcpast: {
+            present_perfect: {
                 frame: "border-red-200 bg-red-50/70",
                 frameTitle: "text-red-900",
                 frameSubtle: "text-red-700",
@@ -486,11 +1121,52 @@
                 progressBar: "bg-red-500",
                 floating: "bg-red-50 border-red-500 text-red-900",
                 lockCard: "bg-red-50/95 border-red-300 text-red-900"
+            },
+            mix_ps_pc: {
+                frame: "border-cyan-200 bg-cyan-50/70",
+                frameTitle: "text-cyan-900",
+                frameSubtle: "text-cyan-700",
+                controlBtn: "border-cyan-200 text-cyan-700 hover:bg-cyan-100",
+                startBtn: "bg-cyan-600 border border-cyan-700 text-white hover:bg-cyan-700",
+                progressBar: "bg-cyan-500",
+                floating: "bg-cyan-50 border-cyan-500 text-cyan-900",
+                lockCard: "bg-cyan-50/95 border-cyan-300 text-cyan-900"
+            },
+            mix_past_simple_past_continuous: {
+                frame: "border-teal-200 bg-teal-50/70",
+                frameTitle: "text-teal-900",
+                frameSubtle: "text-teal-700",
+                controlBtn: "border-teal-200 text-teal-700 hover:bg-teal-100",
+                startBtn: "bg-teal-600 border border-teal-700 text-white hover:bg-teal-700",
+                progressBar: "bg-teal-500",
+                floating: "bg-teal-50 border-teal-500 text-teal-900",
+                lockCard: "bg-teal-50/95 border-teal-300 text-teal-900"
+            },
+            mix_present_perfect_past_simple: {
+                frame: "border-rose-200 bg-rose-50/70",
+                frameTitle: "text-rose-900",
+                frameSubtle: "text-rose-700",
+                controlBtn: "border-rose-200 text-rose-700 hover:bg-rose-100",
+                startBtn: "bg-rose-600 border border-rose-700 text-white hover:bg-rose-700",
+                progressBar: "bg-rose-500",
+                floating: "bg-rose-50 border-rose-500 text-rose-900",
+                lockCard: "bg-rose-50/95 border-rose-300 text-rose-900"
+            },
+            mixed_all: {
+                frame: "border-indigo-200 bg-indigo-50/70",
+                frameTitle: "text-indigo-900",
+                frameSubtle: "text-indigo-700",
+                controlBtn: "border-indigo-200 text-indigo-700 hover:bg-indigo-100",
+                startBtn: "bg-indigo-600 border border-indigo-700 text-white hover:bg-indigo-700",
+                progressBar: "bg-indigo-500",
+                floating: "bg-indigo-50 border-indigo-500 text-indigo-900",
+                lockCard: "bg-indigo-50/95 border-indigo-300 text-indigo-900"
             }
         };
         const uiState = {
             shakeTaskKey: null,
-            cooldownUntilByTaskKey: {}
+            cooldownUntilByTaskKey: {},
+            matchDraftByTaskKey: {}
         };
 
         function safeParse(value, fallback) {
@@ -503,6 +1179,55 @@
 
         function normalizeAnswer(value) {
             return String(value || "").trim().toLowerCase();
+        }
+
+        function hashStringToUint32(value) {
+            let hash = 2166136261;
+            const input = String(value || "");
+            for (let i = 0; i < input.length; i++) {
+                hash ^= input.charCodeAt(i);
+                hash = Math.imul(hash, 16777619);
+            }
+            return hash >>> 0;
+        }
+
+        function mulberry32(seed) {
+            let t = seed >>> 0;
+            return function() {
+                t += 0x6D2B79F5;
+                let r = Math.imul(t ^ (t >>> 15), t | 1);
+                r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
+                return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        function seededShuffle(items, seedKey) {
+            const shuffled = Array.isArray(items) ? [...items] : [];
+            const random = mulberry32(hashStringToUint32(seedKey));
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(random() * (i + 1));
+                const tmp = shuffled[i];
+                shuffled[i] = shuffled[j];
+                shuffled[j] = tmp;
+            }
+            return shuffled;
+        }
+
+        function getTaskKey(topicId, taskId) {
+            return `${topicId}:${taskId}`;
+        }
+
+        function getMatchDraft(topicId, taskId) {
+            const taskKey = getTaskKey(topicId, taskId);
+            if (!uiState.matchDraftByTaskKey[taskKey]) {
+                uiState.matchDraftByTaskKey[taskKey] = { selectedLeft: null, pairs: {} };
+            }
+            return uiState.matchDraftByTaskKey[taskKey];
+        }
+
+        function clearMatchDraft(topicId, taskId) {
+            const taskKey = getTaskKey(topicId, taskId);
+            delete uiState.matchDraftByTaskKey[taskKey];
         }
 
         function getTopicPalette(topicId) {
@@ -520,11 +1245,17 @@
 
         function getTopicChartColors(topicId) {
             const colors = {
-                possessive: { solid: "#2563eb", soft: "rgba(37,99,235,0.28)", accentText: "text-blue-700", accentBg: "bg-blue-50" },
-                forsince: { solid: "#7c3aed", soft: "rgba(124,58,237,0.28)", accentText: "text-purple-700", accentBg: "bg-purple-50" },
-                pronouns: { solid: "#16a34a", soft: "rgba(22,163,74,0.28)", accentText: "text-green-700", accentBg: "bg-green-50" },
-                firstcond: { solid: "#ca8a04", soft: "rgba(202,138,4,0.30)", accentText: "text-yellow-700", accentBg: "bg-yellow-50" },
-                perfcpast: { solid: "#dc2626", soft: "rgba(220,38,38,0.28)", accentText: "text-red-700", accentBg: "bg-red-50" }
+                time_markers: { solid: "#0284c7", soft: "rgba(2,132,199,0.28)", accentText: "text-sky-700", accentBg: "bg-sky-50" },
+                present_simple: { solid: "#2563eb", soft: "rgba(37,99,235,0.28)", accentText: "text-blue-700", accentBg: "bg-blue-50" },
+                present_continuous: { solid: "#7c3aed", soft: "rgba(124,58,237,0.28)", accentText: "text-purple-700", accentBg: "bg-purple-50" },
+                past_simple: { solid: "#16a34a", soft: "rgba(22,163,74,0.28)", accentText: "text-green-700", accentBg: "bg-green-50" },
+                past_continuous: { solid: "#059669", soft: "rgba(5,150,105,0.28)", accentText: "text-emerald-700", accentBg: "bg-emerald-50" },
+                future_simple: { solid: "#ca8a04", soft: "rgba(202,138,4,0.30)", accentText: "text-yellow-700", accentBg: "bg-yellow-50" },
+                present_perfect: { solid: "#dc2626", soft: "rgba(220,38,38,0.28)", accentText: "text-red-700", accentBg: "bg-red-50" },
+                mix_ps_pc: { solid: "#0891b2", soft: "rgba(8,145,178,0.28)", accentText: "text-cyan-700", accentBg: "bg-cyan-50" },
+                mix_past_simple_past_continuous: { solid: "#0f766e", soft: "rgba(15,118,110,0.28)", accentText: "text-teal-700", accentBg: "bg-teal-50" },
+                mix_present_perfect_past_simple: { solid: "#e11d48", soft: "rgba(225,29,72,0.28)", accentText: "text-rose-700", accentBg: "bg-rose-50" },
+                mixed_all: { solid: "#4f46e5", soft: "rgba(79,70,229,0.28)", accentText: "text-indigo-700", accentBg: "bg-indigo-50" }
             };
             return colors[topicId] || { solid: "#4f46e5", soft: "rgba(79,70,229,0.28)", accentText: "text-indigo-700", accentBg: "bg-indigo-50" };
         }
@@ -548,7 +1279,7 @@
         }
 
         function getTaskCooldownKey(topicId, taskId) {
-            return `${topicId}:${taskId}`;
+            return getTaskKey(topicId, taskId);
         }
 
         function getTaskCooldownLeftMs(topicId, taskId) {
@@ -691,8 +1422,8 @@
 
         function migrateLegacyState() {
             const migrated = createDefaultProgress();
-            const legacyQuiz = safeParse(localStorage.getItem(LEGACY_QUIZ_KEY), {});
-            const legacyDays = safeParse(localStorage.getItem(LEGACY_DAY_KEY), {});
+            const legacyQuiz = safeParse(localStorage.getItem(LEGACY_QUIZ_KEY) || localStorage.getItem(OLD_LEGACY_QUIZ_KEY), {});
+            const legacyDays = safeParse(localStorage.getItem(LEGACY_DAY_KEY) || localStorage.getItem(OLD_LEGACY_DAY_KEY), {});
             const migratedAt = new Date().toISOString();
 
             topics.forEach(topic => {
@@ -732,7 +1463,19 @@
                 return;
             }
 
-            const hasLegacy = localStorage.getItem(LEGACY_QUIZ_KEY) || localStorage.getItem(LEGACY_DAY_KEY);
+            const oldSavedV2 = safeParse(localStorage.getItem(OLD_STORAGE_KEY_V2), null);
+            if (oldSavedV2) {
+                progressState = normalizeProgress(oldSavedV2);
+                localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(progressState));
+                localStorage.removeItem(OLD_STORAGE_KEY_V2);
+                updateStats();
+                return;
+            }
+
+            const hasLegacy = localStorage.getItem(LEGACY_QUIZ_KEY) ||
+                localStorage.getItem(LEGACY_DAY_KEY) ||
+                localStorage.getItem(OLD_LEGACY_QUIZ_KEY) ||
+                localStorage.getItem(OLD_LEGACY_DAY_KEY);
             if (hasLegacy) {
                 progressState = normalizeProgress(migrateLegacyState());
                 localStorage.setItem(STORAGE_KEY_V2, JSON.stringify(progressState));
@@ -756,12 +1499,16 @@
                 localStorage.removeItem(STORAGE_KEY_V2);
                 localStorage.removeItem(LEGACY_QUIZ_KEY);
                 localStorage.removeItem(LEGACY_DAY_KEY);
+                localStorage.removeItem(OLD_STORAGE_KEY_V2);
+                localStorage.removeItem(OLD_LEGACY_QUIZ_KEY);
+                localStorage.removeItem(OLD_LEGACY_DAY_KEY);
                 Object.keys(topicCharts).forEach(chartId => {
                     if (topicCharts[chartId]) topicCharts[chartId].destroy();
                     delete topicCharts[chartId];
                 });
                 uiState.shakeTaskKey = null;
                 uiState.cooldownUntilByTaskKey = {};
+                uiState.matchDraftByTaskKey = {};
                 activeTopicIndex = 0;
                 progressState = createDefaultProgress();
                 saveProgress();
@@ -824,7 +1571,7 @@
             const challenge = getChallengeState(topic.id);
             const total = topic.tasks.length;
             const solved = getTopicSolvedCount(topic.id);
-            let remaining = CHALLENGE_DURATION_SECONDS;
+            let remaining = CHALLENGE_TOTAL_SECONDS;
             if (challenge.isRunning) {
                 remaining = getRemainingSeconds(topic.id);
             } else if (challenge.lastResult && challenge.lastResult.status === "timeout") {
@@ -1015,7 +1762,7 @@
             const solved = getTopicSolvedCount(topicId);
             const endTime = Date.now();
             const startTime = challenge.startedAt ? new Date(challenge.startedAt).getTime() : endTime;
-            const elapsedSeconds = Math.max(0, Math.min(CHALLENGE_DURATION_SECONDS, Math.ceil((endTime - startTime) / 1000)));
+            const elapsedSeconds = Math.max(0, Math.min(CHALLENGE_TOTAL_SECONDS, Math.ceil((endTime - startTime) / 1000)));
 
             challenge.isRunning = false;
             challenge.isCompleted = true;
@@ -1153,7 +1900,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Diana Report</title>
+    <title>Kirill Report</title>
     <style>
         body { font-family: Arial, sans-serif; color: #1f2937; margin: 24px; }
         h1 { margin-bottom: 4px; }
@@ -1175,7 +1922,7 @@
     </style>
 </head>
 <body>
-    <h1>Учебный отчет Дианы</h1>
+    <h1>Учебный отчет Кирилла</h1>
     <div class="muted">Экспортировано: ${exportedAt.toLocaleString('ru-RU')}</div>
     <div class="stats-grid">
         <div class="card">Выполнено задач<strong>${stats.completedTasks} / ${stats.totalTasks}</strong></div>
@@ -1349,7 +2096,7 @@
             };
 
             downloadTextFile(
-                `diana-progress-${datePart}.json`,
+                `kirill-progress-${datePart}.json`,
                 JSON.stringify(payload, null, 2),
                 'application/json'
             );
@@ -1370,7 +2117,7 @@
             const datePart = now.toISOString().slice(0, 10);
             const reportHtml = buildReportHtml(now.toISOString());
             downloadTextFile(
-                `diana-progress-report-${datePart}.doc`,
+                `kirill-progress-report-${datePart}.doc`,
                 reportHtml,
                 'application/msword'
             );
@@ -1404,12 +2151,13 @@
         function renderTaskCard(topic, task, taskIndex, trainerDisabled) {
             const taskState = getTaskState(topic.id, task.id);
             const isSolved = taskState.solved;
+            const isWrongLocked = taskState.challengeWrong === true;
             const hasAttempts = taskState.attempts > 0;
             const isLastCorrect = taskState.lastWasCorrect === true;
             const cooldownLeftMs = isSolved ? 0 : getTaskCooldownLeftMs(topic.id, task.id);
             const isCooldownActive = cooldownLeftMs > 0;
-            const isDisabled = trainerDisabled || isSolved || isCooldownActive;
-            const taskKey = `${topic.id}:${task.id}`;
+            const isDisabled = trainerDisabled || isSolved || isWrongLocked || isCooldownActive;
+            const taskKey = getTaskKey(topic.id, task.id);
             const cardStateClass = isSolved
                 ? 'bg-green-50 border-green-200'
                 : (hasAttempts && !isLastCorrect ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100');
@@ -1493,6 +2241,84 @@
                 `;
             }
 
+            if (task.type === "match") {
+                const draft = getMatchDraft(topic.id, task.id);
+                const selectedLeft = draft.selectedLeft;
+                const shuffledLeftItems = seededShuffle(task.leftItems, `${topic.id}:${task.id}:L`);
+                const shuffledRightItems = seededShuffle(task.rightItems, `${topic.id}:${task.id}:R`);
+                const rightItemByKey = Object.fromEntries(task.rightItems.map(item => [item.key, item]));
+                const pairEntries = Object.entries(draft.pairs);
+                const matchedLeftCount = pairEntries.length;
+                const leftTotal = task.leftItems.length;
+                const submitDisabled = isDisabled || matchedLeftCount !== leftTotal;
+                const usedRightKeys = new Set(Object.values(draft.pairs));
+
+                taskBody = `
+                    <div class="mb-3 text-xs text-gray-500">Выбери маркер слева, затем пару справа. Собрано: ${matchedLeftCount}/${leftTotal}</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="rounded-xl border border-gray-200 bg-white p-3">
+                            <p class="text-xs uppercase tracking-wide font-bold text-gray-500 mb-2">${task.leftLabel || 'Left'}</p>
+                            <div class="space-y-2">
+                                ${shuffledLeftItems.map((item) => {
+                                    const isSelected = selectedLeft === item.key;
+                                    const isPaired = Boolean(draft.pairs[item.key]);
+                                    const btnClass = isSelected
+                                        ? "border-sky-400 bg-sky-50 text-sky-800"
+                                        : (isPaired ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-gray-200 bg-white text-gray-700 hover:border-sky-300");
+                                    return `<button
+                                        ${isDisabled ? 'disabled' : ''}
+                                        onclick="selectMatchLeft(${taskIndex}, '${item.key}')"
+                                        class="w-full text-left px-3 py-2 rounded-lg border text-sm font-medium transition-colors disabled:opacity-60 ${btnClass}">
+                                        ${item.text}
+                                    </button>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                        <div class="rounded-xl border border-gray-200 bg-white p-3">
+                            <p class="text-xs uppercase tracking-wide font-bold text-gray-500 mb-2">${task.rightLabel || 'Right'}</p>
+                            <div class="space-y-2">
+                                ${shuffledRightItems.map((item) => {
+                                    const isUsed = usedRightKeys.has(item.key);
+                                    const btnClass = isUsed
+                                        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                                        : "border-gray-200 bg-white text-gray-700 hover:border-sky-300";
+                                    return `<button
+                                        ${isDisabled ? 'disabled' : ''}
+                                        onclick="selectMatchRight(${taskIndex}, '${item.key}')"
+                                        class="w-full text-left px-3 py-2 rounded-lg border text-sm font-medium transition-colors disabled:opacity-60 ${btnClass}">
+                                        ${item.text}
+                                    </button>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3 rounded-xl border border-gray-200 bg-white p-3">
+                        <p class="text-xs uppercase tracking-wide font-bold text-gray-500 mb-2">Пары</p>
+                        <div class="space-y-2">
+                            ${shuffledLeftItems.map((leftItem) => {
+                                const rightKey = draft.pairs[leftItem.key];
+                                const rightItem = rightKey ? rightItemByKey[rightKey] : null;
+                                return `
+                                    <div class="flex items-center justify-between gap-2 text-sm">
+                                        <span class="text-gray-700">${leftItem.text}</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${rightItem ? 'bg-sky-100 text-sky-800 border border-sky-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}">${rightItem ? rightItem.text : '—'}</span>
+                                            ${rightItem && !isDisabled ? `<button onclick="clearMatchPair(${taskIndex}, '${leftItem.key}')" class="text-xs text-red-500 hover:text-red-700 underline">очистить</button>` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <button
+                            ${submitDisabled ? 'disabled' : ''}
+                            onclick="submitMatchTask(${taskIndex})"
+                            class="mt-3 px-5 py-3 rounded-xl font-medium bg-indigo-500 text-white hover:bg-indigo-600 transition-all disabled:opacity-60">
+                            Проверить пары
+                        </button>
+                    </div>
+                `;
+            }
+
             return `
                 <div id="task-${topic.id}-${taskIndex}" data-task-index="${taskIndex}" class="mb-6 p-5 border rounded-2xl ${cardStateClass} transition-colors duration-300 ${uiState.shakeTaskKey === taskKey ? 'challenge-shake' : ''}">
                     <div class="flex items-center justify-between mb-3">
@@ -1505,7 +2331,7 @@
                     </p>
                     ${taskBody}
                     ${taskState.challengeWrong ? `
-                        <div class="mt-2 text-xs font-bold text-red-600">Wrong, try again</div>
+                        <div class="mt-2 text-xs font-bold text-red-600">Wrong answer is locked. Use Try again to reset this topic.</div>
                     ` : ''}
                     ${isCooldownActive ? `
                         <div class="mt-2 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
@@ -1536,6 +2362,7 @@
             const totalTasks = topic.tasks.length;
             const solvedCount = getTopicSolvedCount(topic.id);
             const progressPercent = totalTasks ? Math.round((solvedCount / totalTasks) * 100) : 0;
+            const challengeDurationLabel = formatTime(CHALLENGE_TOTAL_SECONDS);
             const bestTimeHtml = challenge.bestTimeSeconds !== null
                 ? `<p class="text-xs text-gray-500 mt-1">Best time: <span class="font-bold text-emerald-600">${formatTime(challenge.bestTimeSeconds)}</span></p>`
                 : '';
@@ -1576,7 +2403,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
                             <p class="text-sm font-bold ${palette.frameTitle}">Challenge Mode</p>
-                            <p class="text-xs ${palette.frameSubtle}">Goal: solve all tasks (${totalTasks}) in 2:00.</p>
+                            <p class="text-xs ${palette.frameSubtle}">Goal: solve all tasks (${totalTasks}) in ${challengeDurationLabel}.</p>
                             ${bestTimeHtml}
                         </div>
                         <div class="flex items-center gap-3">
@@ -1591,7 +2418,7 @@
                     <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                         <div class="bg-white rounded-lg border border-gray-100 px-3 py-2">
                             <p class="text-gray-500 text-xs">Time left</p>
-                            <p class="font-bold text-gray-800">Time left: <span id="challengeTimeLeft">${formatTime(challenge.isRunning ? getRemainingSeconds(topic.id) : (challenge.lastResult && challenge.lastResult.status === "timeout" ? 0 : CHALLENGE_DURATION_SECONDS))}</span></p>
+                            <p class="font-bold text-gray-800">Time left: <span id="challengeTimeLeft">${formatTime(challenge.isRunning ? getRemainingSeconds(topic.id) : (challenge.lastResult && challenge.lastResult.status === "timeout" ? 0 : CHALLENGE_TOTAL_SECONDS))}</span></p>
                         </div>
                         <div class="bg-white rounded-lg border border-gray-100 px-3 py-2">
                             <p class="text-gray-500 text-xs">Solved</p>
@@ -1608,7 +2435,7 @@
                     ${resultSummaryHtml}
                     <div class="mt-4 flex flex-wrap items-center gap-3">
                         <button onclick="startTopicChallenge()" class="px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${palette.startBtn}">
-                            I’ve read the rule — Start 2:00 challenge
+                            I’ve read the rule — Start ${challengeDurationLabel} challenge
                         </button>
                         ${challenge.lastResult && !challenge.isRunning ? `
                             <button onclick="resetChallengeTopic()" class="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 font-semibold text-sm">
@@ -1629,7 +2456,7 @@
                             <div class="trainer-overlay ${palette.frameSubtle}">
                                 <div class="border rounded-xl px-4 py-3 shadow-sm ${palette.lockCard}">
                                     <p class="text-sm font-bold ${palette.frameTitle}">Trainer is locked</p>
-                                    <p class="text-xs mt-1">Read the rule and start the 2:00 challenge to unlock tasks.</p>
+                                    <p class="text-xs mt-1">Read the rule and start the ${challengeDurationLabel} challenge to unlock tasks.</p>
                                 </div>
                             </div>
                         ` : ''}
@@ -1702,6 +2529,14 @@
                 const accepted = (task.acceptedAnswers || [task.correct]).map(normalizeAnswer);
                 return accepted.includes(normalizedAnswer);
             }
+            if (task.type === "match") {
+                if (!userAnswer || typeof userAnswer !== "object" || !userAnswer.pairs) return false;
+                const expectedPairs = task.correct || {};
+                const actualPairs = userAnswer.pairs || {};
+                const expectedKeys = Object.keys(expectedPairs);
+                if (Object.keys(actualPairs).length !== expectedKeys.length) return false;
+                return expectedKeys.every((leftKey) => actualPairs[leftKey] === expectedPairs[leftKey]);
+            }
             return false;
         }
 
@@ -1719,9 +2554,10 @@
             if (challenge.locked || !challenge.isRunning) return;
             const task = topic.tasks[taskIndex];
             const taskState = getTaskState(topic.id, task.id);
+            if (taskState.challengeWrong) return;
             if (getTaskCooldownLeftMs(topic.id, task.id) > 0) return;
             const isCorrect = isTaskAnswerCorrect(task, userAnswer);
-            const taskKey = `${topic.id}:${task.id}`;
+            const taskKey = getTaskKey(topic.id, task.id);
 
             taskState.attempts += 1;
             taskState.lastAnswer = userAnswer;
@@ -1732,8 +2568,9 @@
                 taskState.correct = true;
                 taskState.solved = true;
                 delete uiState.cooldownUntilByTaskKey[taskKey];
-            } else {
-                startTaskCooldown(topic.id, task.id);
+            }
+            if (task.type === "match") {
+                clearMatchDraft(topic.id, task.id);
             }
 
             saveProgress();
@@ -1785,6 +2622,63 @@
             window.handleTaskAnswer(taskIndex, value);
         };
 
+        window.selectMatchLeft = (taskIndex, leftKey) => {
+            const topic = topics[activeTopicIndex];
+            const challenge = getChallengeState(topic.id);
+            if (challenge.locked || !challenge.isRunning) return;
+            const task = topic.tasks[taskIndex];
+            const taskState = getTaskState(topic.id, task.id);
+            if (task.type !== "match" || taskState.solved || taskState.challengeWrong) return;
+            const draft = getMatchDraft(topic.id, task.id);
+            draft.selectedLeft = leftKey;
+            renderContent();
+        };
+
+        window.selectMatchRight = (taskIndex, rightKey) => {
+            const topic = topics[activeTopicIndex];
+            const challenge = getChallengeState(topic.id);
+            if (challenge.locked || !challenge.isRunning) return;
+            const task = topic.tasks[taskIndex];
+            const taskState = getTaskState(topic.id, task.id);
+            if (task.type !== "match" || taskState.solved || taskState.challengeWrong) return;
+            const draft = getMatchDraft(topic.id, task.id);
+            if (!draft.selectedLeft) return;
+            draft.pairs[draft.selectedLeft] = rightKey;
+            draft.selectedLeft = null;
+            renderContent();
+        };
+
+        window.clearMatchPair = (taskIndex, leftKey) => {
+            const topic = topics[activeTopicIndex];
+            const challenge = getChallengeState(topic.id);
+            if (challenge.locked || !challenge.isRunning) return;
+            const task = topic.tasks[taskIndex];
+            const taskState = getTaskState(topic.id, task.id);
+            if (task.type !== "match" || taskState.solved || taskState.challengeWrong) return;
+            const draft = getMatchDraft(topic.id, task.id);
+            delete draft.pairs[leftKey];
+            if (draft.selectedLeft === leftKey) {
+                draft.selectedLeft = null;
+            }
+            renderContent();
+        };
+
+        window.submitMatchTask = (taskIndex) => {
+            const topic = topics[activeTopicIndex];
+            syncChallengeState(topic.id);
+            const challenge = getChallengeState(topic.id);
+            if (challenge.locked || !challenge.isRunning) return;
+            const task = topic.tasks[taskIndex];
+            const taskState = getTaskState(topic.id, task.id);
+            if (task.type !== "match" || taskState.solved || taskState.challengeWrong) return;
+            const draft = getMatchDraft(topic.id, task.id);
+            if (Object.keys(draft.pairs).length !== task.leftItems.length) return;
+            const answerPayload = {
+                pairs: { ...draft.pairs }
+            };
+            window.handleTaskAnswer(taskIndex, answerPayload);
+        };
+
         window.startTopicChallenge = () => {
             const topic = topics[activeTopicIndex];
             const challenge = getChallengeState(topic.id);
@@ -1793,7 +2687,7 @@
             challenge.isRunning = true;
             challenge.isCompleted = false;
             challenge.startedAt = new Date().toISOString();
-            challenge.endAt = new Date(Date.now() + CHALLENGE_DURATION_SECONDS * 1000).toISOString();
+            challenge.endAt = new Date(Date.now() + CHALLENGE_TOTAL_SECONDS * 1000).toISOString();
             challenge.lastResult = null;
             saveProgress();
             renderContent();
@@ -1814,6 +2708,7 @@
             challenge.lastResult = null;
             topic.tasks.forEach(task => {
                 progressState.topicTaskState[topic.id][task.id] = createDefaultTaskState();
+                clearMatchDraft(topic.id, task.id);
             });
             stopChallengeTimer();
             saveProgress();
