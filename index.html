@@ -10,6 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <style>
+        :root {
+            --topic-primary: #4f46e5;
+            --topic-bg-soft: #eef2ff;
+            --topic-border: #c7d2fe;
+            --topic-text: #312e81;
+        }
         body { font-family: 'Nunito', sans-serif; background-color: #F3F4F6; }
         .gradient-bg { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
         .card-hover:hover { transform: translateY(-3px); transition: all 0.3s ease; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
@@ -61,6 +67,69 @@
             75% { transform: translateX(-4px); }
             100% { transform: translateX(0); }
         }
+        .sticky-topic-bar {
+            position: sticky;
+            top: 10px;
+            z-index: 35;
+            background: var(--topic-bg-soft);
+            border: 1px solid var(--topic-border);
+            box-shadow: 0 8px 26px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(8px);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .sticky-topic-bar.sticky-topic-bar-scrolled {
+            box-shadow: 0 14px 34px rgba(15, 23, 42, 0.14);
+        }
+        .premium-enter {
+            animation: premiumEnter 0.34s cubic-bezier(.22,.61,.36,1) both;
+        }
+        @keyframes premiumEnter {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .task-success-pulse {
+            animation: successPulse 0.62s ease-out;
+        }
+        @keyframes successPulse {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.42); }
+            100% { box-shadow: 0 0 0 14px rgba(34, 197, 94, 0); }
+        }
+        .challenge-wrong-glow {
+            box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.45), 0 0 0 8px rgba(254, 202, 202, 0.7);
+        }
+        .focus-ring:focus-visible {
+            outline: 2px solid var(--topic-primary);
+            outline-offset: 2px;
+        }
+        .toast-stack {
+            position: fixed;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(94vw, 520px);
+            z-index: 60;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast-item {
+            pointer-events: auto;
+            border: 1px solid var(--topic-border);
+            background: var(--topic-bg-soft);
+            color: var(--topic-text);
+            border-radius: 12px;
+            padding: 10px 12px;
+            box-shadow: 0 10px 24px rgba(2, 6, 23, 0.12);
+            animation: premiumEnter 0.24s ease both;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation: none !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
     </style>
 </head>
 <body class="text-gray-700">
@@ -97,43 +166,75 @@
 
     <!-- Main Content -->
     <main class="max-w-6xl mx-auto px-4 -mt-16 pb-20 relative z-20">
+        <div id="stickyTopicBar" class="sticky-topic-bar premium-enter rounded-2xl px-3 py-2 mb-4">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div class="min-w-0 flex-1">
+                    <p id="stickyActiveTopicTitle" class="font-bold text-sm truncate text-gray-900">Topic</p>
+                    <p id="stickyActiveTopicProgress" class="text-[11px] text-gray-600">0/0 completed</p>
+                </div>
+                <span id="stickyTimerPill" class="hidden text-xs font-extrabold rounded-full px-3 py-1 border border-white/60 bg-white/70 text-gray-800">
+                    ⏱ <span id="stickyChallengeTimeLeft">00:00</span>
+                </span>
+                <button id="stickySoundBtn" onclick="toggleChallengeSound()" class="focus-ring text-xs px-3 py-1.5 rounded-lg border bg-white/80 hover:bg-white transition-colors">
+                    🔊 Sound
+                </button>
+                <button id="stickyResetBtn" onclick="resetChallengeTopic()" class="focus-ring text-xs px-3 py-1.5 rounded-lg border bg-white/80 hover:bg-white transition-colors">
+                    Reset
+                </button>
+            </div>
+        </div>
         
-        <!-- Top Stats Row (Previous Results) -->
+        <!-- Top Stats Row -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-            <!-- Quiz 1 -->
+            <!-- Streak + Goal -->
             <div class="bg-white rounded-2xl shadow-sm p-6 card-hover border-l-4 border-blue-500">
                 <div class="flex justify-between items-start mb-3">
                     <div>
-                        <h3 class="font-bold text-lg text-gray-800">Quiz 1: Basics</h3>
-                        <p class="text-xs text-gray-400">Предыдущий результат</p>
+                        <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                            <i class="fas fa-fire text-orange-500"></i> Streak + Goal
+                        </h3>
+                        <p class="text-xs text-gray-400">Practice consistency and daily target</p>
                     </div>
-                    <span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold text-sm">63%</span>
+                    <span id="streakBadge" class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full font-bold text-sm">0 days</span>
+                </div>
+                <div class="mb-4">
+                    <p class="text-xs uppercase tracking-wider text-gray-400 font-bold">Today</p>
+                    <p class="text-sm font-bold text-gray-700">Today: <span id="todayGoalText">0/12</span></p>
                 </div>
                 <div class="w-full bg-gray-100 rounded-full h-2 mb-4">
-                    <div class="bg-blue-500 h-2 rounded-full" style="width: 63%"></div>
+                    <div id="todayGoalBar" class="bg-blue-500 h-2 rounded-full transition-all" style="width: 0%"></div>
                 </div>
-                <div class="flex justify-between text-xs font-semibold text-gray-500">
-                    <span class="text-green-600"><i class="fas fa-check mr-1"></i>19 Верно</span>
-                    <span class="text-red-500"><i class="fas fa-times mr-1"></i>11 Ошибок</span>
-                </div>
+                <p class="text-xs font-semibold text-gray-500">
+                    <i class="fas fa-stopwatch mr-1 text-indigo-500"></i><span id="challengePbText">Best time (PB): —</span>
+                </p>
             </div>
 
-            <!-- Quiz 2 -->
+            <!-- Mistake Bank -->
             <div class="bg-white rounded-2xl shadow-sm p-6 card-hover border-l-4 border-purple-500">
                 <div class="flex justify-between items-start mb-3">
                     <div>
-                        <h3 class="font-bold text-lg text-gray-800">Quiz 2: Advanced</h3>
-                        <p class="text-xs text-gray-400">Предыдущий результат</p>
+                        <h3 class="font-bold text-lg text-gray-800 flex items-center gap-2">
+                            <i class="fas fa-bug text-rose-500"></i> Mistake Bank
+                        </h3>
+                        <p class="text-xs text-gray-400">Weak spots to review</p>
                     </div>
-                    <span class="bg-purple-50 text-purple-600 px-3 py-1 rounded-full font-bold text-sm">55%</span>
+                    <span id="wrongTodayBadge" class="bg-rose-50 text-rose-600 px-3 py-1 rounded-full font-bold text-sm">0 today</span>
                 </div>
-                <div class="w-full bg-gray-100 rounded-full h-2 mb-4">
-                    <div class="bg-purple-500 h-2 rounded-full" style="width: 55%"></div>
+                <div id="mistakeTopList" class="space-y-2 mb-4 text-xs text-gray-600">
+                    <p class="text-gray-400">No mistakes yet.</p>
                 </div>
-                <div class="flex justify-between text-xs font-semibold text-gray-500">
-                    <span class="text-green-600"><i class="fas fa-check mr-1"></i>11 Верно</span>
-                    <span class="text-red-500"><i class="fas fa-times mr-1"></i>9 Ошибок</span>
-                </div>
+                <button onclick="reviewMistakes()" class="focus-ring text-xs px-3 py-2 rounded-lg border border-purple-200 text-purple-700 hover:bg-purple-50 transition-colors">
+                    Review mistakes
+                </button>
+            </div>
+        </div>
+        <div id="mistakeBankSection" class="bg-white rounded-2xl shadow-sm p-4 mb-10 border border-gray-100">
+            <div class="flex items-center justify-between gap-3 mb-3">
+                <h3 class="text-sm font-extrabold text-gray-800">Top 3 Most Missed</h3>
+                <span class="text-[11px] text-gray-400">Global ranking</span>
+            </div>
+            <div id="mistakeBankSectionList" class="space-y-2 text-sm text-gray-700">
+                <p class="text-gray-400 text-xs">No problematic tasks yet.</p>
             </div>
         </div>
         <div class="bg-white rounded-2xl shadow-sm p-4 mb-10 border border-gray-100">
@@ -178,7 +279,7 @@
         </div>
 
         <!-- Topic Stats -->
-        <div class="mt-12">
+        <div id="topicStatsSection" class="mt-12">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
                     <i class="fas fa-chart-pie text-indigo-600"></i> Stats
@@ -211,7 +312,7 @@
                 <div class="flex gap-4 min-w-max pb-4" id="planTimeline">
                     <!-- JS Injected -->
                 </div>
-            </div>
+        </div>
             
             <!-- Reset Button -->
             <div class="mt-6 text-center flex items-center justify-center gap-4">
@@ -223,6 +324,8 @@
         </div>
 
     </main>
+
+    <div id="toastContainer" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
 
     <!-- Footer -->
     <footer class="bg-gray-800 text-white py-10 text-center mt-10 border-t border-gray-700">
@@ -240,7 +343,7 @@
         const OLD_STORAGE_KEY_V2 = "diana_progress_v2";
         const OLD_LEGACY_QUIZ_KEY = "diana_quiz_state";
         const OLD_LEGACY_DAY_KEY = "diana_day_state";
-        const CHALLENGE_TOTAL_SECONDS = 240;
+        const CHALLENGE_TOTAL_SECONDS = 360;
 
         const topics = [
             {
@@ -1046,11 +1149,15 @@
         const topicCharts = {};
         let activeChallengeTimer = null;
         let activeChallengeTickTimer = null;
+        let topicStatsObserver = null;
+        let isTopicStatsVisible = false;
+        let stickyScrollRaf = null;
         let audioCtx = null;
         let tickNoiseBuffer = null;
         const TASK_SCROLL_OFFSET_PX = 108;
         const ANSWER_COOLDOWN_MS = 2000;
         const CHALLENGE_TICK_VOLUME = 0.03;
+        const DAILY_GOAL_COMPLETED = 12;
         const TOPIC_PALETTES = {
             time_markers: {
                 frame: "border-sky-200 bg-sky-50/70",
@@ -1163,10 +1270,25 @@
                 lockCard: "bg-indigo-50/95 border-indigo-300 text-indigo-900"
             }
         };
+        const TOPIC_THEME_TOKENS = {
+            time_markers: { primary: "#0284c7", bgSoft: "#f0f9ff", border: "#bae6fd", text: "#0c4a6e" },
+            present_simple: { primary: "#2563eb", bgSoft: "#eff6ff", border: "#bfdbfe", text: "#1e3a8a" },
+            present_continuous: { primary: "#7c3aed", bgSoft: "#f5f3ff", border: "#ddd6fe", text: "#4c1d95" },
+            past_simple: { primary: "#16a34a", bgSoft: "#f0fdf4", border: "#bbf7d0", text: "#14532d" },
+            past_continuous: { primary: "#059669", bgSoft: "#ecfdf5", border: "#a7f3d0", text: "#064e3b" },
+            future_simple: { primary: "#ca8a04", bgSoft: "#fefce8", border: "#fde68a", text: "#713f12" },
+            present_perfect: { primary: "#dc2626", bgSoft: "#fef2f2", border: "#fecaca", text: "#7f1d1d" },
+            mix_ps_pc: { primary: "#0891b2", bgSoft: "#ecfeff", border: "#a5f3fc", text: "#164e63" },
+            mix_past_simple_past_continuous: { primary: "#0f766e", bgSoft: "#f0fdfa", border: "#99f6e4", text: "#134e4a" },
+            mix_present_perfect_past_simple: { primary: "#e11d48", bgSoft: "#fff1f2", border: "#fecdd3", text: "#881337" },
+            mixed_all: { primary: "#4f46e5", bgSoft: "#eef2ff", border: "#c7d2fe", text: "#312e81" }
+        };
         const uiState = {
             shakeTaskKey: null,
             cooldownUntilByTaskKey: {},
-            matchDraftByTaskKey: {}
+            matchDraftByTaskKey: {},
+            successPulseTaskKey: null,
+            toastTimeouts: []
         };
 
         function safeParse(value, fallback) {
@@ -1243,21 +1365,27 @@
             };
         }
 
+        function getTopicTheme(topicId) {
+            return TOPIC_THEME_TOKENS[topicId] || TOPIC_THEME_TOKENS.mixed_all;
+        }
+
+        function applyTopicTheme(topicId) {
+            const theme = getTopicTheme(topicId);
+            const root = document.documentElement;
+            root.style.setProperty("--topic-primary", theme.primary);
+            root.style.setProperty("--topic-bg-soft", theme.bgSoft);
+            root.style.setProperty("--topic-border", theme.border);
+            root.style.setProperty("--topic-text", theme.text);
+        }
+
         function getTopicChartColors(topicId) {
-            const colors = {
-                time_markers: { solid: "#0284c7", soft: "rgba(2,132,199,0.28)", accentText: "text-sky-700", accentBg: "bg-sky-50" },
-                present_simple: { solid: "#2563eb", soft: "rgba(37,99,235,0.28)", accentText: "text-blue-700", accentBg: "bg-blue-50" },
-                present_continuous: { solid: "#7c3aed", soft: "rgba(124,58,237,0.28)", accentText: "text-purple-700", accentBg: "bg-purple-50" },
-                past_simple: { solid: "#16a34a", soft: "rgba(22,163,74,0.28)", accentText: "text-green-700", accentBg: "bg-green-50" },
-                past_continuous: { solid: "#059669", soft: "rgba(5,150,105,0.28)", accentText: "text-emerald-700", accentBg: "bg-emerald-50" },
-                future_simple: { solid: "#ca8a04", soft: "rgba(202,138,4,0.30)", accentText: "text-yellow-700", accentBg: "bg-yellow-50" },
-                present_perfect: { solid: "#dc2626", soft: "rgba(220,38,38,0.28)", accentText: "text-red-700", accentBg: "bg-red-50" },
-                mix_ps_pc: { solid: "#0891b2", soft: "rgba(8,145,178,0.28)", accentText: "text-cyan-700", accentBg: "bg-cyan-50" },
-                mix_past_simple_past_continuous: { solid: "#0f766e", soft: "rgba(15,118,110,0.28)", accentText: "text-teal-700", accentBg: "bg-teal-50" },
-                mix_present_perfect_past_simple: { solid: "#e11d48", soft: "rgba(225,29,72,0.28)", accentText: "text-rose-700", accentBg: "bg-rose-50" },
-                mixed_all: { solid: "#4f46e5", soft: "rgba(79,70,229,0.28)", accentText: "text-indigo-700", accentBg: "bg-indigo-50" }
+            const theme = getTopicTheme(topicId);
+            return {
+                solid: theme.primary,
+                soft: `${theme.primary}44`,
+                accentText: "text-gray-800",
+                accentBg: "bg-white"
             };
-            return colors[topicId] || { solid: "#4f46e5", soft: "rgba(79,70,229,0.28)", accentText: "text-indigo-700", accentBg: "bg-indigo-50" };
         }
 
         function scrollToElementWithOffset(el, offset = TASK_SCROLL_OFFSET_PX) {
@@ -1362,6 +1490,8 @@
                 topicTaskState,
                 dayState,
                 challenge: createDefaultChallengeState(),
+                dailyPractice: {},
+                challengePBSeconds: null,
                 stats: {
                     xp: 0,
                     progressPercent: 0,
@@ -1384,6 +1514,8 @@
                 topicTaskState: {},
                 dayState: {},
                 challenge: createDefaultChallengeState(),
+                dailyPractice: {},
+                challengePBSeconds: null,
                 stats: base.stats
             };
 
@@ -1415,6 +1547,12 @@
             normalized.challenge.soundEnabled = raw.challenge && typeof raw.challenge.soundEnabled === "boolean"
                 ? raw.challenge.soundEnabled
                 : true;
+            normalized.dailyPractice = raw.dailyPractice && typeof raw.dailyPractice === "object"
+                ? raw.dailyPractice
+                : {};
+            normalized.challengePBSeconds = Number.isFinite(raw.challengePBSeconds)
+                ? Number(raw.challengePBSeconds)
+                : null;
 
             normalized.stats = computeStats(normalized);
             return normalized;
@@ -1533,6 +1671,12 @@
             return topic.tasks.filter(task => getTaskState(topicId, task.id).solved).length;
         }
 
+        function areAllTopicTasksAttempted(topicId) {
+            const topic = topics.find(t => t.id === topicId);
+            if (!topic) return false;
+            return topic.tasks.every(task => Number(getTaskState(topicId, task.id).attempts || 0) > 0);
+        }
+
         function getChallengeState(topicId) {
             if (!progressState.challenge) {
                 progressState.challenge = createDefaultChallengeState();
@@ -1550,6 +1694,99 @@
             return `${mm}:${ss}`;
         }
 
+        function getLocalDateKey(date = new Date()) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, "0");
+            const d = String(date.getDate()).padStart(2, "0");
+            return `${y}-${m}-${d}`;
+        }
+
+        function shiftDateKey(dateKey, offsetDays) {
+            const [y, m, d] = String(dateKey).split("-").map(Number);
+            const date = new Date(y, (m || 1) - 1, d || 1);
+            date.setDate(date.getDate() + offsetDays);
+            return getLocalDateKey(date);
+        }
+
+        function ensureDailyPracticeDay(dateKey) {
+            if (!progressState.dailyPractice || typeof progressState.dailyPractice !== "object") {
+                progressState.dailyPractice = {};
+            }
+            if (!progressState.dailyPractice[dateKey]) {
+                progressState.dailyPractice[dateKey] = {
+                    attempts: 0,
+                    completed: 0,
+                    wrongAttempts: 0
+                };
+            }
+            return progressState.dailyPractice[dateKey];
+        }
+
+        function recordDailyPracticeAttempt({ isCorrect }) {
+            const todayKey = getLocalDateKey();
+            const dayState = ensureDailyPracticeDay(todayKey);
+            dayState.attempts += 1;
+            dayState.completed += 1;
+            if (!isCorrect) dayState.wrongAttempts += 1;
+        }
+
+        function getCurrentStreakDays() {
+            if (!progressState || !progressState.dailyPractice) return 0;
+            let streak = 0;
+            let cursor = getLocalDateKey();
+            while (true) {
+                const day = progressState.dailyPractice[cursor];
+                if (!day || Number(day.attempts || 0) <= 0) break;
+                streak += 1;
+                cursor = shiftDateKey(cursor, -1);
+            }
+            return streak;
+        }
+
+        function getTodaysPracticeSummary() {
+            const todayKey = getLocalDateKey();
+            const day = (progressState && progressState.dailyPractice && progressState.dailyPractice[todayKey]) || {};
+            const completed = Number(day.completed || 0);
+            const wrongAttempts = Number(day.wrongAttempts || 0);
+            return {
+                completed,
+                wrongAttempts,
+                goal: DAILY_GOAL_COMPLETED,
+                goalPercent: Math.min(100, Math.round((completed / DAILY_GOAL_COMPLETED) * 100))
+            };
+        }
+
+        function truncateText(value, max = 50) {
+            const clean = String(value || "").replace(/\s+/g, " ").trim();
+            if (clean.length <= max) return clean;
+            return `${clean.slice(0, Math.max(0, max - 1))}…`;
+        }
+
+        function getMostMissedTasks(limit = 3) {
+            const ranked = [];
+            topics.forEach(topic => {
+                topic.tasks.forEach((task, taskIndex) => {
+                    const state = getTaskState(topic.id, task.id);
+                    const attempts = Number(state.attempts || 0);
+                    const correctCount = state.correct ? 1 : 0;
+                    const wrongCount = Math.max(0, attempts - correctCount);
+                    if (wrongCount <= 0) return;
+                    ranked.push({
+                        topicId: topic.id,
+                        topicTitle: topic.title,
+                        taskId: task.id,
+                        taskIndex,
+                        prompt: task.prompt,
+                        wrongCount,
+                        attempts,
+                        solved: Boolean(state.solved)
+                    });
+                });
+            });
+            ranked.sort((a, b) => (b.wrongCount - a.wrongCount) || (b.attempts - a.attempts));
+            return ranked.slice(0, limit);
+        }
+
         function getRemainingSeconds(topicId) {
             const challenge = getChallengeState(topicId);
             if (!challenge.isRunning || !challenge.endAt) return 0;
@@ -1560,6 +1797,13 @@
         function syncChallengeState(topicId) {
             const challenge = getChallengeState(topicId);
             if (!challenge.isRunning || !challenge.endAt) return;
+            if (areAllTopicTasksAttempted(topicId)) {
+                const topic = topics.find(t => t.id === topicId);
+                if (!topic) return;
+                const status = getTopicSolvedCount(topicId) === topic.tasks.length ? "success" : "attempted";
+                completeChallenge(topicId, status);
+                return;
+            }
             if (new Date(challenge.endAt).getTime() <= Date.now()) {
                 completeChallenge(topicId, "timeout");
             }
@@ -1569,13 +1813,16 @@
             const topic = topics[activeTopicIndex];
             if (!topic || !progressState) return;
             const challenge = getChallengeState(topic.id);
+            const theme = getTopicTheme(topic.id);
             const total = topic.tasks.length;
             const solved = getTopicSolvedCount(topic.id);
             let remaining = CHALLENGE_TOTAL_SECONDS;
             if (challenge.isRunning) {
                 remaining = getRemainingSeconds(topic.id);
-            } else if (challenge.lastResult && challenge.lastResult.status === "timeout") {
-                remaining = 0;
+            } else if (challenge.lastResult) {
+                remaining = Number.isFinite(challenge.lastResult.timeLeftSeconds)
+                    ? challenge.lastResult.timeLeftSeconds
+                    : Math.max(0, CHALLENGE_TOTAL_SECONDS - Number(challenge.lastResult.timeSpentSeconds || 0));
             }
             const progressPercent = total ? Math.round((solved / total) * 100) : 0;
 
@@ -1586,17 +1833,50 @@
             const floatingTimerEl = document.getElementById("floatingChallengeTimeLeft");
             const floatingSolvedEl = document.getElementById("floatingChallengeSolvedCount");
             const floatingStatusEl = document.getElementById("floatingChallengeStatusText");
+            const stickyTimerPillEl = document.getElementById("stickyTimerPill");
+            const stickyTimerEl = document.getElementById("stickyChallengeTimeLeft");
+            const stickyTitleEl = document.getElementById("stickyActiveTopicTitle");
+            const stickyProgressEl = document.getElementById("stickyActiveTopicProgress");
+            const stickySoundEl = document.getElementById("stickySoundBtn");
+            const stickyResetEl = document.getElementById("stickyResetBtn");
+            const stickyBar = document.getElementById("stickyTopicBar");
+
             if (timerEl) timerEl.textContent = formatTime(remaining);
             if (solvedEl) solvedEl.textContent = `${solved}/${total}`;
             if (progressEl) progressEl.style.width = `${progressPercent}%`;
             if (floatingTimerEl) floatingTimerEl.textContent = formatTime(remaining);
             if (floatingSolvedEl) floatingSolvedEl.textContent = `${solved}/${total}`;
+            if (stickyTimerEl) stickyTimerEl.textContent = formatTime(remaining);
+            if (stickyTimerPillEl) stickyTimerPillEl.classList.toggle("hidden", !challenge.isRunning);
+            if (stickyTitleEl) stickyTitleEl.textContent = topic.title;
+            if (stickyProgressEl) stickyProgressEl.textContent = `${solved}/${total} completed`;
+            if (stickySoundEl) stickySoundEl.textContent = progressState.challenge.soundEnabled ? "🔊 Sound" : "🔇 Mute";
+            if (stickyResetEl) stickyResetEl.textContent = (challenge.lastResult && !challenge.isRunning) ? "Try again" : "Reset";
+
+            if (stickyBar) {
+                stickyBar.style.borderColor = theme.border;
+                stickyBar.style.background = theme.bgSoft;
+            }
+            if (stickySoundEl) {
+                stickySoundEl.style.borderColor = theme.border;
+                stickySoundEl.style.color = theme.text;
+            }
+            if (stickyResetEl) {
+                stickyResetEl.style.borderColor = theme.border;
+                stickyResetEl.style.color = theme.text;
+            }
+            if (stickyTimerPillEl) {
+                stickyTimerPillEl.style.borderColor = theme.border;
+                stickyTimerPillEl.style.color = theme.text;
+            }
 
             if (statusEl) {
                 if (challenge.isRunning) {
                     statusEl.textContent = "Challenge is running";
                 } else if (challenge.lastResult && challenge.lastResult.status === "success") {
                     statusEl.textContent = `Success in ${formatTime(challenge.lastResult.timeSpentSeconds)}`;
+                } else if (challenge.lastResult && challenge.lastResult.status === "attempted") {
+                    statusEl.textContent = `All tasks attempted in ${formatTime(challenge.lastResult.timeSpentSeconds)}`;
                 } else if (challenge.lastResult && challenge.lastResult.status === "timeout") {
                     statusEl.textContent = "Time is up";
                 } else {
@@ -1609,12 +1889,42 @@
                     floatingStatusEl.textContent = "Challenge is running";
                 } else if (challenge.lastResult && challenge.lastResult.status === "success") {
                     floatingStatusEl.textContent = `Success in ${formatTime(challenge.lastResult.timeSpentSeconds)}`;
+                } else if (challenge.lastResult && challenge.lastResult.status === "attempted") {
+                    floatingStatusEl.textContent = `All tasks attempted in ${formatTime(challenge.lastResult.timeSpentSeconds)}`;
                 } else if (challenge.lastResult && challenge.lastResult.status === "timeout") {
                     floatingStatusEl.textContent = "Time is up";
                 } else {
                     floatingStatusEl.textContent = "Locked";
                 }
             }
+        }
+
+        function showToast(message, type = "info") {
+            const container = document.getElementById("toastContainer");
+            if (!container) return;
+            const icon = type === "success"
+                ? "fa-circle-check"
+                : (type === "error" ? "fa-circle-exclamation" : "fa-circle-info");
+            const toast = document.createElement("div");
+            toast.className = "toast-item";
+            toast.innerHTML = `<div class="flex items-start gap-2"><i class="fas ${icon} mt-0.5"></i><p class="text-sm font-semibold">${message}</p></div>`;
+            container.appendChild(toast);
+            const timeoutId = setTimeout(() => {
+                toast.remove();
+            }, 2200);
+            uiState.toastTimeouts.push(timeoutId);
+        }
+
+        function setupStickyBarScrollFx() {
+            const stickyBar = document.getElementById("stickyTopicBar");
+            if (!stickyBar) return;
+            window.addEventListener("scroll", () => {
+                if (stickyScrollRaf) return;
+                stickyScrollRaf = requestAnimationFrame(() => {
+                    stickyBar.classList.toggle("sticky-topic-bar-scrolled", window.scrollY > 40);
+                    stickyScrollRaf = null;
+                });
+            }, { passive: true });
         }
 
         function startChallengeTimer(topicId) {
@@ -1763,6 +2073,7 @@
             const endTime = Date.now();
             const startTime = challenge.startedAt ? new Date(challenge.startedAt).getTime() : endTime;
             const elapsedSeconds = Math.max(0, Math.min(CHALLENGE_TOTAL_SECONDS, Math.ceil((endTime - startTime) / 1000)));
+            const timeLeftSeconds = Math.max(0, CHALLENGE_TOTAL_SECONDS - elapsedSeconds);
 
             challenge.isRunning = false;
             challenge.isCompleted = true;
@@ -1773,6 +2084,7 @@
                 solved,
                 total,
                 timeSpentSeconds: elapsedSeconds,
+                timeLeftSeconds,
                 finishedAt: new Date().toISOString()
             };
 
@@ -1786,6 +2098,18 @@
                     origin: { y: 0.6 },
                     colors: ['#a855f7', '#3b82f6', '#22c55e']
                 });
+            }
+            if ((status === "success" || status === "attempted") && elapsedSeconds > 0) {
+                if (progressState.challengePBSeconds === null || elapsedSeconds < progressState.challengePBSeconds) {
+                    progressState.challengePBSeconds = elapsedSeconds;
+                }
+            }
+            if (status === "success") {
+                showToast(`Topic finished: ${topic.title}`, "success");
+            } else if (status === "attempted") {
+                showToast(`All tasks attempted: ${topic.title}`, "info");
+            } else if (status === "timeout") {
+                showToast(`Time is up: ${topic.title}`, "error");
             }
 
             saveProgress();
@@ -1844,6 +2168,7 @@
             if (totalTasksEl) totalTasksEl.innerText = stats.totalTasks;
             if (correctCountEl) correctCountEl.innerText = stats.correctCount;
             if (attemptCountEl) attemptCountEl.innerText = stats.attemptCount;
+            renderDashboardCards();
             renderTopicStats();
         }
 
@@ -1949,31 +2274,60 @@
 <\/html>`;
         }
 
+        function destroyTopicCharts() {
+            Object.keys(topicCharts).forEach((key) => {
+                if (topicCharts[key]) topicCharts[key].destroy();
+                delete topicCharts[key];
+            });
+        }
+
+        function setupTopicStatsObserver() {
+            const section = document.getElementById("topicStatsSection");
+            if (!section) return;
+            if (!("IntersectionObserver" in window)) {
+                isTopicStatsVisible = true;
+                renderTopicStats();
+                return;
+            }
+            if (topicStatsObserver) {
+                topicStatsObserver.disconnect();
+                topicStatsObserver = null;
+            }
+            topicStatsObserver = new IntersectionObserver((entries) => {
+                const visible = entries.some(entry => entry.isIntersecting);
+                isTopicStatsVisible = visible;
+                if (visible) renderTopicStats();
+            }, { root: null, rootMargin: "140px 0px", threshold: 0.05 });
+            topicStatsObserver.observe(section);
+        }
+
         function renderTopicStats() {
             const container = document.getElementById('topicStatsContainer');
             if (!container || !progressState) return;
+            destroyTopicCharts();
 
             container.innerHTML = topics.map((topic, index) => {
                 const t = computeTopicStats(topic, progressState);
                 const chartColors = getTopicChartColors(topic.id);
+                const theme = getTopicTheme(topic.id);
                 return `
-                    <div class="bg-white rounded-2xl shadow-md p-5 border border-gray-100">
+                    <div class="premium-enter rounded-2xl shadow-md p-5 border bg-white" style="border-color:${theme.border}">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="font-bold text-gray-800">${topic.title}</h3>
-                            <span class="text-xs px-2 py-1 rounded ${chartColors.accentBg} ${chartColors.accentText}">${t.completed}/${t.total}</span>
+                            <span class="text-xs px-2 py-1 rounded ${chartColors.accentBg} ${chartColors.accentText}" style="border:1px solid ${theme.border}; color:${theme.text}">${t.completed}/${t.total}</span>
                         </div>
                         <div class="grid grid-cols-3 gap-3 mb-4">
-                            <div class="${chartColors.accentBg} rounded-lg p-2">
+                            <div class="${chartColors.accentBg} rounded-lg p-2" style="border:1px solid ${theme.border}">
                                 <p class="text-[10px] uppercase text-gray-400 font-bold">Completion</p>
-                                <p class="text-sm font-bold ${chartColors.accentText}">${t.completed}/${t.total}</p>
+                                <p class="text-sm font-bold ${chartColors.accentText}" style="color:${theme.text}">${t.completed}/${t.total}</p>
                             </div>
-                            <div class="${chartColors.accentBg} rounded-lg p-2">
+                            <div class="${chartColors.accentBg} rounded-lg p-2" style="border:1px solid ${theme.border}">
                                 <p class="text-[10px] uppercase text-gray-400 font-bold">Accuracy</p>
-                                <p class="text-sm font-bold ${chartColors.accentText}">${t.correct}/${t.attempts}</p>
+                                <p class="text-sm font-bold ${chartColors.accentText}" style="color:${theme.text}">${t.correct}/${t.attempts}</p>
                             </div>
-                            <div class="${chartColors.accentBg} rounded-lg p-2">
+                            <div class="${chartColors.accentBg} rounded-lg p-2" style="border:1px solid ${theme.border}">
                                 <p class="text-[10px] uppercase text-gray-400 font-bold">Attempts</p>
-                                <p class="text-sm font-bold ${chartColors.accentText}">${t.attempts}</p>
+                                <p class="text-sm font-bold ${chartColors.accentText}" style="color:${theme.text}">${t.attempts}</p>
                             </div>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1984,7 +2338,7 @@
                 `;
             }).join('');
 
-            if (!window.Chart) return;
+            if (!isTopicStatsVisible || !window.Chart) return;
 
             topics.forEach((topic, index) => {
                 const t = computeTopicStats(topic, progressState);
@@ -2056,6 +2410,103 @@
                 });
             });
         }
+
+        function renderDashboardCards() {
+            if (!progressState) return;
+            const streakEl = document.getElementById("streakBadge");
+            const goalTextEl = document.getElementById("todayGoalText");
+            const goalBarEl = document.getElementById("todayGoalBar");
+            const pbEl = document.getElementById("challengePbText");
+            const wrongTodayEl = document.getElementById("wrongTodayBadge");
+            const mistakeTopListEl = document.getElementById("mistakeTopList");
+            const mistakeSectionListEl = document.getElementById("mistakeBankSectionList");
+
+            const streak = getCurrentStreakDays();
+            const today = getTodaysPracticeSummary();
+            const topMistakes = getMostMissedTasks(3);
+            const pbSeconds = Number.isFinite(progressState.challengePBSeconds)
+                ? progressState.challengePBSeconds
+                : null;
+
+            if (streakEl) streakEl.textContent = `${streak} day${streak === 1 ? "" : "s"}`;
+            if (goalTextEl) goalTextEl.textContent = `${today.completed}/${today.goal}`;
+            if (goalBarEl) goalBarEl.style.width = `${today.goalPercent}%`;
+            if (pbEl) pbEl.textContent = pbSeconds === null ? "Best time (PB): —" : `Best time (PB): ${formatTime(pbSeconds)}`;
+            if (wrongTodayEl) wrongTodayEl.textContent = `${today.wrongAttempts} today`;
+
+            const topMistakesHtml = topMistakes.length
+                ? topMistakes.map((item) => `
+                    <div class="flex items-start justify-between gap-2">
+                        <div>
+                            <p class="font-semibold text-gray-700">${truncateText(item.prompt, 50)}</p>
+                            <p class="text-[11px] text-gray-400">${item.topicTitle}</p>
+                        </div>
+                        <span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 font-bold">-${item.wrongCount}</span>
+                    </div>
+                `).join("")
+                : `<p class="text-gray-400">No mistakes yet.</p>`;
+
+            if (mistakeTopListEl) mistakeTopListEl.innerHTML = topMistakesHtml;
+            if (mistakeSectionListEl) {
+                mistakeSectionListEl.innerHTML = topMistakes.length
+                    ? topMistakes.map((item, idx) => `
+                        <button onclick="jumpToMistakeTask('${item.topicId}', '${item.taskId}')" class="focus-ring w-full text-left px-3 py-2 rounded-lg border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 transition-colors">
+                            <span class="text-xs text-gray-400 mr-2">#${idx + 1}</span>
+                            <span class="font-semibold">${truncateText(item.prompt, 64)}</span>
+                            <span class="text-xs text-gray-500"> (${item.topicTitle})</span>
+                        </button>
+                    `).join("")
+                    : `<p class="text-gray-400 text-xs">No problematic tasks yet.</p>`;
+            }
+        }
+
+        function getFirstProblemTaskInTopic(topicId) {
+            const topic = topics.find(t => t.id === topicId);
+            if (!topic) return null;
+            for (let i = 0; i < topic.tasks.length; i++) {
+                const task = topic.tasks[i];
+                const state = getTaskState(topic.id, task.id);
+                const attempts = Number(state.attempts || 0);
+                const wrongCount = Math.max(0, attempts - (state.correct ? 1 : 0));
+                if (wrongCount > 0) {
+                    return { topicId: topic.id, taskId: task.id, taskIndex: i };
+                }
+            }
+            return null;
+        }
+
+        window.jumpToMistakeTask = (topicId, taskId) => {
+            const topicIndex = topics.findIndex(t => t.id === topicId);
+            if (topicIndex < 0) return;
+            const taskIndex = topics[topicIndex].tasks.findIndex(t => t.id === taskId);
+            if (taskIndex < 0) return;
+            activeTopicIndex = topicIndex;
+            renderTabs();
+            renderContent();
+            const scrollToTask = () => {
+                const taskEl = document.getElementById(`task-${topicId}-${taskIndex}`);
+                if (taskEl) {
+                    scrollToElementWithOffset(taskEl, TASK_SCROLL_OFFSET_PX);
+                }
+            };
+            setTimeout(scrollToTask, 80);
+        };
+
+        window.reviewMistakes = () => {
+            const topic = topics[activeTopicIndex];
+            const firstProblem = getFirstProblemTaskInTopic(topic.id);
+            if (firstProblem) {
+                const taskEl = document.getElementById(`task-${topic.id}-${firstProblem.taskIndex}`);
+                if (taskEl) {
+                    scrollToElementWithOffset(taskEl, TASK_SCROLL_OFFSET_PX);
+                    return;
+                }
+            }
+            const section = document.getElementById("mistakeBankSection");
+            if (section) {
+                section.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        };
 
         function downloadTextFile(filename, content, mimeType) {
             const blob = new Blob([content], { type: mimeType });
@@ -2150,6 +2601,7 @@
 
         function renderTaskCard(topic, task, taskIndex, trainerDisabled) {
             const taskState = getTaskState(topic.id, task.id);
+            const theme = getTopicTheme(topic.id);
             const isSolved = taskState.solved;
             const isWrongLocked = taskState.challengeWrong === true;
             const hasAttempts = taskState.attempts > 0;
@@ -2208,7 +2660,8 @@
                         <button
                             ${isDisabled ? 'disabled' : ''}
                             onclick="submitFillTask(${taskIndex})"
-                            class="px-5 py-3 rounded-xl font-medium bg-indigo-500 text-white hover:bg-indigo-600 transition-all disabled:opacity-60">
+                            class="focus-ring px-5 py-3 rounded-xl font-medium transition-all disabled:opacity-60"
+                            style="background:${theme.primary}; color:#fff;">
                             Проверить
                         </button>
                     </div>
@@ -2312,7 +2765,8 @@
                         <button
                             ${submitDisabled ? 'disabled' : ''}
                             onclick="submitMatchTask(${taskIndex})"
-                            class="mt-3 px-5 py-3 rounded-xl font-medium bg-indigo-500 text-white hover:bg-indigo-600 transition-all disabled:opacity-60">
+                            class="focus-ring mt-3 px-5 py-3 rounded-xl font-medium transition-all disabled:opacity-60"
+                            style="background:${theme.primary}; color:#fff;">
                             Проверить пары
                         </button>
                     </div>
@@ -2320,7 +2774,7 @@
             }
 
             return `
-                <div id="task-${topic.id}-${taskIndex}" data-task-index="${taskIndex}" class="mb-6 p-5 border rounded-2xl ${cardStateClass} transition-colors duration-300 ${uiState.shakeTaskKey === taskKey ? 'challenge-shake' : ''}">
+                <div id="task-${topic.id}-${taskIndex}" data-task-index="${taskIndex}" class="mb-6 p-5 border rounded-2xl premium-enter ${cardStateClass} transition-colors duration-300 ${uiState.shakeTaskKey === taskKey ? 'challenge-shake challenge-wrong-glow' : ''} ${uiState.successPulseTaskKey === taskKey ? 'task-success-pulse' : ''}">
                     <div class="flex items-center justify-between mb-3">
                         <span class="text-xs font-bold uppercase tracking-wider text-gray-500 bg-white px-2 py-1 rounded">Task ${taskIndex + 1}/${topic.tasks.length}</span>
                         <span class="text-xs text-gray-400">Попытки: ${taskState.attempts}</span>
@@ -2356,6 +2810,8 @@
             syncChallengeState(topic.id);
             const challenge = getChallengeState(topic.id);
             const palette = getTopicPalette(topic.id);
+            const theme = getTopicTheme(topic.id);
+            applyTopicTheme(topic.id);
             const completedCount = getTopicSolvedCount(topic.id);
             const isTrainerUnlocked = !challenge.locked && challenge.isRunning;
             const tasksHTML = topic.tasks.map((task, taskIdx) => renderTaskCard(topic, task, taskIdx, !isTrainerUnlocked)).join('');
@@ -2372,6 +2828,12 @@
                     resultSummaryHtml = `
                         <div class="mt-3 text-sm bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg px-3 py-2">
                             Success: ${challenge.lastResult.solved}/${challenge.lastResult.total} in ${formatTime(challenge.lastResult.timeSpentSeconds)}.
+                        </div>
+                    `;
+                } else if (challenge.lastResult.status === "attempted") {
+                    resultSummaryHtml = `
+                        <div class="mt-3 text-sm bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2">
+                            All tasks attempted. Solved ${challenge.lastResult.solved}/${challenge.lastResult.total} in ${formatTime(challenge.lastResult.timeSpentSeconds)}.
                         </div>
                     `;
                 } else if (challenge.lastResult.status === "timeout") {
@@ -2399,18 +2861,18 @@
                     ${topic.theory}
                 </div>
 
-                <div class="mb-8 border rounded-xl p-4 ${palette.frame}">
+                <div class="mb-8 border rounded-xl p-4 premium-enter ${palette.frame}" style="background:${theme.bgSoft}; border-color:${theme.border}">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div>
-                            <p class="text-sm font-bold ${palette.frameTitle}">Challenge Mode</p>
-                            <p class="text-xs ${palette.frameSubtle}">Goal: solve all tasks (${totalTasks}) in ${challengeDurationLabel}.</p>
+                            <p class="text-sm font-bold ${palette.frameTitle}" style="color:${theme.text}">Challenge Mode</p>
+                            <p class="text-xs ${palette.frameSubtle}" style="color:${theme.text}">Goal: attempt all tasks (${totalTasks}) in ${challengeDurationLabel}.</p>
                             ${bestTimeHtml}
                         </div>
                         <div class="flex items-center gap-3">
-                            <button onclick="toggleChallengeSound()" class="text-xs px-3 py-2 rounded-lg border bg-white ${palette.controlBtn}">
+                            <button onclick="toggleChallengeSound()" class="focus-ring text-xs px-3 py-2 rounded-lg border bg-white ${palette.controlBtn}" style="border-color:${theme.border}; color:${theme.text}">
                                 Sound: ${progressState.challenge.soundEnabled ? 'On' : 'Off'}
                             </button>
-                            <button onclick="resetChallengeTopic()" class="text-xs px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-100">
+                            <button onclick="resetChallengeTopic()" class="focus-ring text-xs px-3 py-2 rounded-lg border bg-white text-gray-600 hover:bg-gray-100" style="border-color:${theme.border}; color:${theme.text}">
                                 Reset challenge
                             </button>
                         </div>
@@ -2418,7 +2880,7 @@
                     <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                         <div class="bg-white rounded-lg border border-gray-100 px-3 py-2">
                             <p class="text-gray-500 text-xs">Time left</p>
-                            <p class="font-bold text-gray-800">Time left: <span id="challengeTimeLeft">${formatTime(challenge.isRunning ? getRemainingSeconds(topic.id) : (challenge.lastResult && challenge.lastResult.status === "timeout" ? 0 : CHALLENGE_TOTAL_SECONDS))}</span></p>
+                            <p class="font-bold text-gray-800">Time left: <span id="challengeTimeLeft">${formatTime(challenge.isRunning ? getRemainingSeconds(topic.id) : (challenge.lastResult ? (Number.isFinite(challenge.lastResult.timeLeftSeconds) ? challenge.lastResult.timeLeftSeconds : Math.max(0, CHALLENGE_TOTAL_SECONDS - Number(challenge.lastResult.timeSpentSeconds || 0))) : CHALLENGE_TOTAL_SECONDS))}</span></p>
                         </div>
                         <div class="bg-white rounded-lg border border-gray-100 px-3 py-2">
                             <p class="text-gray-500 text-xs">Solved</p>
@@ -2426,7 +2888,7 @@
                         </div>
                         <div class="bg-white rounded-lg border border-gray-100 px-3 py-2">
                             <p class="text-gray-500 text-xs">Status</p>
-                            <p id="challengeStatusText" class="font-bold text-gray-800">${challenge.isRunning ? 'Challenge is running' : (challenge.lastResult ? (challenge.lastResult.status === "success" ? `Success in ${formatTime(challenge.lastResult.timeSpentSeconds)}` : 'Time is up') : 'Locked')}</p>
+                            <p id="challengeStatusText" class="font-bold text-gray-800">${challenge.isRunning ? 'Challenge is running' : (challenge.lastResult ? (challenge.lastResult.status === "success" ? `Success in ${formatTime(challenge.lastResult.timeSpentSeconds)}` : (challenge.lastResult.status === "attempted" ? `All tasks attempted in ${formatTime(challenge.lastResult.timeSpentSeconds)}` : 'Time is up')) : 'Locked')}</p>
                         </div>
                     </div>
                     <div class="mt-3 h-2 bg-white rounded-full overflow-hidden border border-gray-100">
@@ -2434,11 +2896,11 @@
                     </div>
                     ${resultSummaryHtml}
                     <div class="mt-4 flex flex-wrap items-center gap-3">
-                        <button onclick="startTopicChallenge()" class="px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${palette.startBtn}">
+                        <button onclick="startTopicChallenge()" class="focus-ring px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${palette.startBtn}" style="background:${theme.primary}; border-color:${theme.primary}; color:#fff;">
                             I’ve read the rule — Start ${challengeDurationLabel} challenge
                         </button>
                         ${challenge.lastResult && !challenge.isRunning ? `
-                            <button onclick="resetChallengeTopic()" class="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-700 hover:bg-gray-100 font-semibold text-sm">
+                            <button onclick="resetChallengeTopic()" class="focus-ring px-4 py-2 rounded-lg bg-white border text-gray-700 hover:bg-gray-100 font-semibold text-sm" style="border-color:${theme.border}; color:${theme.text}">
                                 Try again
                             </button>
                         ` : ''}
@@ -2454,8 +2916,8 @@
                         ${tasksHTML}
                         ${!isTrainerUnlocked ? `
                             <div class="trainer-overlay ${palette.frameSubtle}">
-                                <div class="border rounded-xl px-4 py-3 shadow-sm ${palette.lockCard}">
-                                    <p class="text-sm font-bold ${palette.frameTitle}">Trainer is locked</p>
+                                <div class="border rounded-xl px-4 py-3 shadow-sm ${palette.lockCard}" style="background:${theme.bgSoft}; border-color:${theme.border}; color:${theme.text}">
+                                    <p class="text-sm font-bold ${palette.frameTitle}" style="color:${theme.text}">Trainer is locked</p>
                                     <p class="text-xs mt-1">Read the rule and start the ${challengeDurationLabel} challenge to unlock tasks.</p>
                                 </div>
                             </div>
@@ -2463,7 +2925,7 @@
                     </div>
                 </div>
                 ${challenge.isRunning ? `
-                    <div id="floatingChallengeTimer" class="floating-timer-hud rounded-xl border px-4 py-3 ${palette.floating}">
+                    <div id="floatingChallengeTimer" class="floating-timer-hud rounded-xl border px-4 py-3 ${palette.floating}" style="background:${theme.bgSoft}; border-color:${theme.border}; color:${theme.text}">
                         <div class="flex items-center justify-between gap-4">
                             <div>
                                 <p class="text-[11px] uppercase tracking-wider font-extrabold opacity-80">Challenge Timer</p>
@@ -2544,6 +3006,7 @@
             activeTopicIndex = index;
             renderTabs();
             renderContent();
+            renderDashboardCards();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
@@ -2564,6 +3027,7 @@
             taskState.lastWasCorrect = isCorrect;
             taskState.lastUpdated = new Date().toISOString();
             taskState.challengeWrong = !isCorrect;
+            recordDailyPracticeAttempt({ isCorrect });
             if (isCorrect) {
                 taskState.correct = true;
                 taskState.solved = true;
@@ -2578,6 +3042,7 @@
 
             if (isCorrect) {
                 playSuccessSound();
+                uiState.successPulseTaskKey = taskKey;
                 confetti({
                     particleCount: 100,
                     spread: 70,
@@ -2594,6 +3059,14 @@
                         scrollToNextTask(topic.id, taskIndex);
                     }
                 }, 90);
+                setTimeout(() => {
+                    if (uiState.successPulseTaskKey === taskKey) {
+                        uiState.successPulseTaskKey = null;
+                        if (topics[activeTopicIndex] && topics[activeTopicIndex].id === topic.id) {
+                            renderContent();
+                        }
+                    }
+                }, 680);
             } else {
                 playErrorSound();
                 uiState.shakeTaskKey = taskKey;
@@ -2607,6 +3080,8 @@
                     }
                 }, 400);
             }
+
+            syncChallengeState(topic.id);
         };
 
         window.submitFillTask = (taskIndex) => {
@@ -2691,8 +3166,11 @@
             challenge.lastResult = null;
             saveProgress();
             renderContent();
+            showToast(`Challenge started: ${topic.title}`, "info");
             if (getTopicSolvedCount(topic.id) === topic.tasks.length) {
                 completeChallenge(topic.id, "success");
+            } else if (areAllTopicTasksAttempted(topic.id)) {
+                completeChallenge(topic.id, "attempted");
             }
         };
 
@@ -2714,6 +3192,7 @@
             saveProgress();
             renderContent();
             console.log(`[reset] Topic reset completed: ${topic.id}`);
+            showToast(`Reset done: ${topic.title}`, "info");
         };
 
         window.toggleChallengeSound = () => {
@@ -2742,6 +3221,8 @@
             renderTabs();
             renderContent();
             renderTimeline();
+            setupTopicStatsObserver();
+            setupStickyBarScrollFx();
         };
     </script>
 </body>
