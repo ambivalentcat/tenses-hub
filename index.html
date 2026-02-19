@@ -343,7 +343,15 @@
         const OLD_STORAGE_KEY_V2 = "diana_progress_v2";
         const OLD_LEGACY_QUIZ_KEY = "diana_quiz_state";
         const OLD_LEGACY_DAY_KEY = "diana_day_state";
-        const CHALLENGE_TOTAL_SECONDS = 360;
+        const DEFAULT_CHALLENGE_DURATION_SECONDS = 180;
+        const TOPIC_CHALLENGE_DURATION_SECONDS = {
+            time_markers: 420
+        };
+
+        function getChallengeDurationSeconds(topicId) {
+            const duration = TOPIC_CHALLENGE_DURATION_SECONDS[topicId];
+            return Number.isFinite(duration) ? Number(duration) : DEFAULT_CHALLENGE_DURATION_SECONDS;
+        }
 
         const topics = [
             {
@@ -1814,15 +1822,16 @@
             if (!topic || !progressState) return;
             const challenge = getChallengeState(topic.id);
             const theme = getTopicTheme(topic.id);
+            const challengeDurationSeconds = getChallengeDurationSeconds(topic.id);
             const total = topic.tasks.length;
             const solved = getTopicSolvedCount(topic.id);
-            let remaining = CHALLENGE_TOTAL_SECONDS;
+            let remaining = challengeDurationSeconds;
             if (challenge.isRunning) {
                 remaining = getRemainingSeconds(topic.id);
             } else if (challenge.lastResult) {
                 remaining = Number.isFinite(challenge.lastResult.timeLeftSeconds)
                     ? challenge.lastResult.timeLeftSeconds
-                    : Math.max(0, CHALLENGE_TOTAL_SECONDS - Number(challenge.lastResult.timeSpentSeconds || 0));
+                    : Math.max(0, challengeDurationSeconds - Number(challenge.lastResult.timeSpentSeconds || 0));
             }
             const progressPercent = total ? Math.round((solved / total) * 100) : 0;
 
@@ -1937,7 +1946,10 @@
                 const topic = topics[activeTopicIndex];
                 if (!topic || topic.id !== topicId) return;
                 const challenge = getChallengeState(topic.id);
-                if (!challenge.isRunning) return;
+                if (!challenge.isRunning) {
+                    stopChallengeTimer();
+                    return;
+                }
                 const remaining = getRemainingSeconds(topic.id);
                 if (remaining <= 0) {
                     completeChallenge(topic.id, "timeout");
@@ -2067,13 +2079,14 @@
             if (!topic) return;
             const challenge = getChallengeState(topicId);
             if (challenge.isCompleted && !challenge.isRunning) return;
+            const challengeDurationSeconds = getChallengeDurationSeconds(topicId);
 
             const total = topic.tasks.length;
             const solved = getTopicSolvedCount(topicId);
             const endTime = Date.now();
             const startTime = challenge.startedAt ? new Date(challenge.startedAt).getTime() : endTime;
-            const elapsedSeconds = Math.max(0, Math.min(CHALLENGE_TOTAL_SECONDS, Math.ceil((endTime - startTime) / 1000)));
-            const timeLeftSeconds = Math.max(0, CHALLENGE_TOTAL_SECONDS - elapsedSeconds);
+            const elapsedSeconds = Math.max(0, Math.min(challengeDurationSeconds, Math.ceil((endTime - startTime) / 1000)));
+            const timeLeftSeconds = Math.max(0, challengeDurationSeconds - elapsedSeconds);
 
             challenge.isRunning = false;
             challenge.isCompleted = true;
@@ -2112,9 +2125,11 @@
                 showToast(`Time is up: ${topic.title}`, "error");
             }
 
-            saveProgress();
             if (topics[activeTopicIndex] && topics[activeTopicIndex].id === topicId) {
                 stopChallengeTimer();
+            }
+            saveProgress();
+            if (topics[activeTopicIndex] && topics[activeTopicIndex].id === topicId) {
                 renderContent();
             }
         }
@@ -2636,7 +2651,7 @@
                             return `<button
                                 ${isDisabled ? 'disabled' : ''}
                                 onclick="handleTaskAnswer(${taskIndex}, ${optIdx})"
-                                class="px-5 py-3 rounded-xl font-medium text-left transition-all transform active:scale-95 disabled:opacity-60 ${btnClass} flex justify-between items-center">
+                                class="px-5 py-3 rounded-xl font-medium text-left transition-all disabled:opacity-60 ${btnClass} flex justify-between items-center">
                                 ${opt} ${icon}
                             </button>`;
                         }).join('')}
@@ -2707,7 +2722,7 @@
                 const usedRightKeys = new Set(Object.values(draft.pairs));
 
                 taskBody = `
-                    <div class="mb-3 text-xs text-gray-500">Выбери маркер слева, затем пару справа. Собрано: ${matchedLeftCount}/${leftTotal}</div>
+                    <div data-match-counter class="mb-3 text-xs text-gray-500">Выбери маркер слева, затем пару справа. Собрано: ${matchedLeftCount}/${leftTotal}</div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div class="rounded-xl border border-gray-200 bg-white p-3">
                             <p class="text-xs uppercase tracking-wide font-bold text-gray-500 mb-2">${task.leftLabel || 'Left'}</p>
@@ -2719,8 +2734,11 @@
                                         ? "border-sky-400 bg-sky-50 text-sky-800"
                                         : (isPaired ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-gray-200 bg-white text-gray-700 hover:border-sky-300");
                                     return `<button
+                                        type="button"
+                                        data-match-left-btn="1"
+                                        data-left-key="${item.key}"
                                         ${isDisabled ? 'disabled' : ''}
-                                        onclick="selectMatchLeft(${taskIndex}, '${item.key}')"
+                                        onclick="selectMatchLeft(event, ${taskIndex}, '${item.key}')"
                                         class="w-full text-left px-3 py-2 rounded-lg border text-sm font-medium transition-colors disabled:opacity-60 ${btnClass}">
                                         ${item.text}
                                     </button>`;
@@ -2736,8 +2754,11 @@
                                         ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                                         : "border-gray-200 bg-white text-gray-700 hover:border-sky-300";
                                     return `<button
+                                        type="button"
+                                        data-match-right-btn="1"
+                                        data-right-key="${item.key}"
                                         ${isDisabled ? 'disabled' : ''}
-                                        onclick="selectMatchRight(${taskIndex}, '${item.key}')"
+                                        onclick="selectMatchRight(event, ${taskIndex}, '${item.key}')"
                                         class="w-full text-left px-3 py-2 rounded-lg border text-sm font-medium transition-colors disabled:opacity-60 ${btnClass}">
                                         ${item.text}
                                     </button>`;
@@ -2752,19 +2773,29 @@
                                 const rightKey = draft.pairs[leftItem.key];
                                 const rightItem = rightKey ? rightItemByKey[rightKey] : null;
                                 return `
-                                    <div class="flex items-center justify-between gap-2 text-sm">
+                                    <div data-match-pair-row="1" data-left-key="${leftItem.key}" class="flex items-center justify-between gap-2 text-sm">
                                         <span class="text-gray-700">${leftItem.text}</span>
                                         <div class="flex items-center gap-2">
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${rightItem ? 'bg-sky-100 text-sky-800 border border-sky-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}">${rightItem ? rightItem.text : '—'}</span>
-                                            ${rightItem && !isDisabled ? `<button onclick="clearMatchPair(${taskIndex}, '${leftItem.key}')" class="text-xs text-red-500 hover:text-red-700 underline">очистить</button>` : ''}
+                                            <span data-match-pair-value="1" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${rightItem ? 'bg-sky-100 text-sky-800 border border-sky-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}">${rightItem ? rightItem.text : '—'}</span>
+                                            <button
+                                                type="button"
+                                                data-match-clear-btn="1"
+                                                data-left-key="${leftItem.key}"
+                                                onclick="clearMatchPair(event, ${taskIndex}, '${leftItem.key}')"
+                                                ${rightItem && !isDisabled ? '' : 'disabled'}
+                                                class="text-xs text-red-500 hover:text-red-700 underline ${rightItem && !isDisabled ? '' : 'hidden'}">
+                                                очистить
+                                            </button>
                                         </div>
                                     </div>
                                 `;
                             }).join('')}
                         </div>
                         <button
+                            type="button"
+                            data-match-submit-btn="1"
                             ${submitDisabled ? 'disabled' : ''}
-                            onclick="submitMatchTask(${taskIndex})"
+                            onclick="submitMatchTask(event, ${taskIndex})"
                             class="focus-ring mt-3 px-5 py-3 rounded-xl font-medium transition-all disabled:opacity-60"
                             style="background:${theme.primary}; color:#fff;">
                             Проверить пары
@@ -2804,6 +2835,92 @@
             `;
         }
 
+        function renderTaskCardInPlace(topicId, taskIndex) {
+            const topic = topics[activeTopicIndex];
+            if (!topic || topic.id !== topicId) return false;
+            const task = topic.tasks[taskIndex];
+            if (!task) return false;
+            const challenge = getChallengeState(topic.id);
+            const isTrainerUnlocked = !challenge.locked && challenge.isRunning;
+            const currentTaskEl = document.getElementById(`task-${topic.id}-${taskIndex}`);
+            if (!currentTaskEl) return false;
+
+            const template = document.createElement("template");
+            template.innerHTML = renderTaskCard(topic, task, taskIndex, !isTrainerUnlocked).trim();
+            const updatedTaskEl = template.content.firstElementChild;
+            if (!updatedTaskEl) return false;
+            currentTaskEl.replaceWith(updatedTaskEl);
+            return true;
+        }
+
+        function updateMatchTaskUI(topicId, taskIndex) {
+            const topic = topics[activeTopicIndex];
+            if (!topic || topic.id !== topicId) return false;
+            const task = topic.tasks[taskIndex];
+            if (!task || task.type !== "match") return false;
+            const taskEl = document.getElementById(`task-${topic.id}-${taskIndex}`);
+            if (!taskEl) return false;
+
+            const challenge = getChallengeState(topic.id);
+            const taskState = getTaskState(topic.id, task.id);
+            const isDisabled = challenge.locked || !challenge.isRunning || taskState.solved || taskState.challengeWrong;
+            const draft = getMatchDraft(topic.id, task.id);
+            const selectedLeft = draft.selectedLeft;
+            const matchedLeftCount = Object.keys(draft.pairs).length;
+            const leftTotal = task.leftItems.length;
+            const usedRightKeys = new Set(Object.values(draft.pairs));
+            const rightItemByKey = Object.fromEntries(task.rightItems.map(item => [item.key, item]));
+
+            const counterEl = taskEl.querySelector("[data-match-counter]");
+            if (counterEl) {
+                counterEl.textContent = `Выбери маркер слева, затем пару справа. Собрано: ${matchedLeftCount}/${leftTotal}`;
+            }
+
+            taskEl.querySelectorAll("[data-match-left-btn]").forEach((btn) => {
+                const leftKey = btn.dataset.leftKey;
+                const isSelected = selectedLeft === leftKey;
+                const isPaired = Boolean(draft.pairs[leftKey]);
+                const btnClass = isSelected
+                    ? "border-sky-400 bg-sky-50 text-sky-800"
+                    : (isPaired ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-gray-200 bg-white text-gray-700 hover:border-sky-300");
+                btn.className = `w-full text-left px-3 py-2 rounded-lg border text-sm font-medium transition-colors disabled:opacity-60 ${btnClass}`;
+                btn.disabled = isDisabled;
+            });
+
+            taskEl.querySelectorAll("[data-match-right-btn]").forEach((btn) => {
+                const rightKey = btn.dataset.rightKey;
+                const isUsed = usedRightKeys.has(rightKey);
+                const btnClass = isUsed
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                    : "border-gray-200 bg-white text-gray-700 hover:border-sky-300";
+                btn.className = `w-full text-left px-3 py-2 rounded-lg border text-sm font-medium transition-colors disabled:opacity-60 ${btnClass}`;
+                btn.disabled = isDisabled;
+            });
+
+            taskEl.querySelectorAll("[data-match-pair-row]").forEach((row) => {
+                const leftKey = row.dataset.leftKey;
+                const rightKey = draft.pairs[leftKey];
+                const rightItem = rightKey ? rightItemByKey[rightKey] : null;
+                const valueEl = row.querySelector("[data-match-pair-value]");
+                const clearBtn = row.querySelector("[data-match-clear-btn]");
+                if (valueEl) {
+                    valueEl.className = `inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${rightItem ? 'bg-sky-100 text-sky-800 border border-sky-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}`;
+                    valueEl.textContent = rightItem ? rightItem.text : "—";
+                }
+                if (clearBtn) {
+                    const canClear = Boolean(rightItem) && !isDisabled;
+                    clearBtn.disabled = !canClear;
+                    clearBtn.className = `text-xs text-red-500 hover:text-red-700 underline ${canClear ? "" : "hidden"}`;
+                }
+            });
+
+            const submitBtn = taskEl.querySelector("[data-match-submit-btn]");
+            if (submitBtn) {
+                submitBtn.disabled = isDisabled || matchedLeftCount !== leftTotal;
+            }
+            return true;
+        }
+
         function renderContent() {
             const topic = topics[activeTopicIndex];
             const container = document.getElementById('contentDisplay');
@@ -2818,7 +2935,8 @@
             const totalTasks = topic.tasks.length;
             const solvedCount = getTopicSolvedCount(topic.id);
             const progressPercent = totalTasks ? Math.round((solvedCount / totalTasks) * 100) : 0;
-            const challengeDurationLabel = formatTime(CHALLENGE_TOTAL_SECONDS);
+            const challengeDurationSeconds = getChallengeDurationSeconds(topic.id);
+            const challengeDurationLabel = formatTime(challengeDurationSeconds);
             const bestTimeHtml = challenge.bestTimeSeconds !== null
                 ? `<p class="text-xs text-gray-500 mt-1">Best time: <span class="font-bold text-emerald-600">${formatTime(challenge.bestTimeSeconds)}</span></p>`
                 : '';
@@ -2880,7 +2998,7 @@
                     <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                         <div class="bg-white rounded-lg border border-gray-100 px-3 py-2">
                             <p class="text-gray-500 text-xs">Time left</p>
-                            <p class="font-bold text-gray-800">Time left: <span id="challengeTimeLeft">${formatTime(challenge.isRunning ? getRemainingSeconds(topic.id) : (challenge.lastResult ? (Number.isFinite(challenge.lastResult.timeLeftSeconds) ? challenge.lastResult.timeLeftSeconds : Math.max(0, CHALLENGE_TOTAL_SECONDS - Number(challenge.lastResult.timeSpentSeconds || 0))) : CHALLENGE_TOTAL_SECONDS))}</span></p>
+                            <p class="font-bold text-gray-800">Time left: <span id="challengeTimeLeft">${formatTime(challenge.isRunning ? getRemainingSeconds(topic.id) : (challenge.lastResult ? (Number.isFinite(challenge.lastResult.timeLeftSeconds) ? challenge.lastResult.timeLeftSeconds : Math.max(0, challengeDurationSeconds - Number(challenge.lastResult.timeSpentSeconds || 0))) : challengeDurationSeconds))}</span></p>
                         </div>
                         <div class="bg-white rounded-lg border border-gray-100 px-3 py-2">
                             <p class="text-gray-500 text-xs">Solved</p>
@@ -3049,11 +3167,16 @@
                     origin: { y: 0.6 },
                     colors: ['#a855f7', '#3b82f6', '#22c55e']
                 });
-                if (getTopicSolvedCount(topic.id) === topic.tasks.length) {
+                const allSolved = getTopicSolvedCount(topic.id) === topic.tasks.length;
+                if (allSolved) {
                     completeChallenge(topic.id, "success");
-                    stopChallengeTimer();
+                } else {
+                    syncChallengeState(topic.id);
                 }
-                renderContent();
+                if (topics[activeTopicIndex] && topics[activeTopicIndex].id === topic.id && getChallengeState(topic.id).isRunning) {
+                    renderTaskCardInPlace(topic.id, taskIndex);
+                    renderChallengeHud();
+                }
                 setTimeout(() => {
                     if (topics[activeTopicIndex] && topics[activeTopicIndex].id === topic.id) {
                         scrollToNextTask(topic.id, taskIndex);
@@ -3062,26 +3185,28 @@
                 setTimeout(() => {
                     if (uiState.successPulseTaskKey === taskKey) {
                         uiState.successPulseTaskKey = null;
-                        if (topics[activeTopicIndex] && topics[activeTopicIndex].id === topic.id) {
-                            renderContent();
+                        if (topics[activeTopicIndex] && topics[activeTopicIndex].id === topic.id && getChallengeState(topic.id).isRunning) {
+                            renderTaskCardInPlace(topic.id, taskIndex);
                         }
                     }
                 }, 680);
             } else {
                 playErrorSound();
                 uiState.shakeTaskKey = taskKey;
-                renderContent();
+                syncChallengeState(topic.id);
+                if (topics[activeTopicIndex] && topics[activeTopicIndex].id === topic.id && getChallengeState(topic.id).isRunning) {
+                    renderTaskCardInPlace(topic.id, taskIndex);
+                    renderChallengeHud();
+                }
                 setTimeout(() => {
                     if (uiState.shakeTaskKey === taskKey) {
                         uiState.shakeTaskKey = null;
-                        if (topics[activeTopicIndex] && topics[activeTopicIndex].id === topic.id) {
-                            renderContent();
+                        if (topics[activeTopicIndex] && topics[activeTopicIndex].id === topic.id && getChallengeState(topic.id).isRunning) {
+                            renderTaskCardInPlace(topic.id, taskIndex);
                         }
                     }
                 }, 400);
             }
-
-            syncChallengeState(topic.id);
         };
 
         window.submitFillTask = (taskIndex) => {
@@ -3097,7 +3222,12 @@
             window.handleTaskAnswer(taskIndex, value);
         };
 
-        window.selectMatchLeft = (taskIndex, leftKey) => {
+        window.selectMatchLeft = (eventOrTaskIndex, taskIndexOrLeftKey, maybeLeftKey) => {
+            const hasEvent = typeof eventOrTaskIndex === "object" && eventOrTaskIndex !== null;
+            const event = hasEvent ? eventOrTaskIndex : null;
+            const taskIndex = hasEvent ? taskIndexOrLeftKey : eventOrTaskIndex;
+            const leftKey = hasEvent ? maybeLeftKey : taskIndexOrLeftKey;
+            if (event && typeof event.preventDefault === "function") event.preventDefault();
             const topic = topics[activeTopicIndex];
             const challenge = getChallengeState(topic.id);
             if (challenge.locked || !challenge.isRunning) return;
@@ -3106,10 +3236,15 @@
             if (task.type !== "match" || taskState.solved || taskState.challengeWrong) return;
             const draft = getMatchDraft(topic.id, task.id);
             draft.selectedLeft = leftKey;
-            renderContent();
+            updateMatchTaskUI(topic.id, taskIndex);
         };
 
-        window.selectMatchRight = (taskIndex, rightKey) => {
+        window.selectMatchRight = (eventOrTaskIndex, taskIndexOrRightKey, maybeRightKey) => {
+            const hasEvent = typeof eventOrTaskIndex === "object" && eventOrTaskIndex !== null;
+            const event = hasEvent ? eventOrTaskIndex : null;
+            const taskIndex = hasEvent ? taskIndexOrRightKey : eventOrTaskIndex;
+            const rightKey = hasEvent ? maybeRightKey : taskIndexOrRightKey;
+            if (event && typeof event.preventDefault === "function") event.preventDefault();
             const topic = topics[activeTopicIndex];
             const challenge = getChallengeState(topic.id);
             if (challenge.locked || !challenge.isRunning) return;
@@ -3120,10 +3255,15 @@
             if (!draft.selectedLeft) return;
             draft.pairs[draft.selectedLeft] = rightKey;
             draft.selectedLeft = null;
-            renderContent();
+            updateMatchTaskUI(topic.id, taskIndex);
         };
 
-        window.clearMatchPair = (taskIndex, leftKey) => {
+        window.clearMatchPair = (eventOrTaskIndex, taskIndexOrLeftKey, maybeLeftKey) => {
+            const hasEvent = typeof eventOrTaskIndex === "object" && eventOrTaskIndex !== null;
+            const event = hasEvent ? eventOrTaskIndex : null;
+            const taskIndex = hasEvent ? taskIndexOrLeftKey : eventOrTaskIndex;
+            const leftKey = hasEvent ? maybeLeftKey : taskIndexOrLeftKey;
+            if (event && typeof event.preventDefault === "function") event.preventDefault();
             const topic = topics[activeTopicIndex];
             const challenge = getChallengeState(topic.id);
             if (challenge.locked || !challenge.isRunning) return;
@@ -3135,10 +3275,14 @@
             if (draft.selectedLeft === leftKey) {
                 draft.selectedLeft = null;
             }
-            renderContent();
+            updateMatchTaskUI(topic.id, taskIndex);
         };
 
-        window.submitMatchTask = (taskIndex) => {
+        window.submitMatchTask = (eventOrTaskIndex, maybeTaskIndex) => {
+            const hasEvent = typeof eventOrTaskIndex === "object" && eventOrTaskIndex !== null;
+            const event = hasEvent ? eventOrTaskIndex : null;
+            const taskIndex = hasEvent ? maybeTaskIndex : eventOrTaskIndex;
+            if (event && typeof event.preventDefault === "function") event.preventDefault();
             const topic = topics[activeTopicIndex];
             syncChallengeState(topic.id);
             const challenge = getChallengeState(topic.id);
@@ -3162,7 +3306,7 @@
             challenge.isRunning = true;
             challenge.isCompleted = false;
             challenge.startedAt = new Date().toISOString();
-            challenge.endAt = new Date(Date.now() + CHALLENGE_TOTAL_SECONDS * 1000).toISOString();
+            challenge.endAt = new Date(Date.now() + getChallengeDurationSeconds(topic.id) * 1000).toISOString();
             challenge.lastResult = null;
             saveProgress();
             renderContent();
